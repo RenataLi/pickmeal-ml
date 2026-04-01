@@ -1,0 +1,162 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Iterable
+
+import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
+from ..schemas import ParsedItem, RecommendRequest, RecommendationRow
+
+
+@dataclass
+class EngineResult:
+    engine_used: str
+    scores: np.ndarray
+
+
+def _item_text(item: ParsedItem) -> str:
+    parts = [item.dish_name or "", item.description or "", item.section or ""]
+    return " ".join(part.strip() for part in parts if part).strip()
+
+
+def _query_text(request: RecommendRequest) -> str:
+    parts = []
+    if request.craving_text:
+        parts.append(request.craving_text)
+    if request.liked_terms:
+        parts.append(" ".join(request.liked_terms))
+    if request.preferred_sections:
+        parts.append(" ".join(request.preferred_sections))
+    return " ".join(parts).strip()
+
+
+def _try_sentence_transformer(texts: list[str], query_text: str) -> EngineResult | None:
+    try:
+        from sentence_transformers import SentenceTransformer
+    except Exception:
+        return None
+
+    # Small multilingual model is a good later option, but we avoid hard-coding downloads here.
+    model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+    matrix = model.encode(texts, normalize_embeddings=True)
+    query_vec = model.encode([query_text], normalize_embeddings=True)
+    scores = cosine_similarity(query_vec, matrix)[0]
+    return EngineResult(engine_used="sentence_transformer", scores=np.asarray(scores))
+
+
+def _tfidf_scores(texts: list[str], query_text: str) -> EngineResult:
+    vectorizer = TfidfVectorizer(ngram_range=(1, 2), min_df=1)
+    matrix = vectorizer.fit_transform(texts + [query_text])
+    item_matrix = matrix[:-1]
+    query_vec = matrix[-1]
+    scores = cosine_similarity(query_vec, item_matrix)[0]
+    return EngineResult(engine_used="tfidf", scores=np.asarray(scores))
+
+
+def _semantic_scores(texts: list[str], query_text: str, engine: str) -> EngineResult:
+    if not query_text:
+        return EngineResult(engine_used="none", scores=np.zeros(len(texts), dtype=float))
+
+    if engine in {"auto", "sentence_transformer"}:
+        st_result = _try_sentence_transformer(texts, query_text)
+        if st_result is not None:
+            return st_result
+        if engine == "sentence_transformer":
+            raise RuntimeError("sentence-transformers is not installed.")
+
+    return _tfidf_scores(texts, query_text)
+
+
+def _apply_filters(request: RecommendRequest, items: Iterable[ParsedItem]) -> list[ParsedItem]:
+    excluded_allergens = {x.lower() for x in request.excluded_allergens}
+    disliked_terms = {x.lower() for x in request.disliked_terms}
+    excluded_sections = {x.lower() for x in request.excluded_sections}
+
+    kept: list[ParsedItem] = []
+    for item in items:
+        item_text = _item_text(item).lower()
+        item_section = (item.section or "").lower()
+        item_allergens = {x.lower() for x in item.explicit_allergens}
+
+        if excluded_allergens & item_allergens:
+            continue
+        if excluded_sections and item_section in excluded_sections:
+            continue
+        if any(term in item_text for term in disliked_terms):
+            continue
+        if request.max_price is not None and item.price_value is not None and item.price_value > request.max_price:
+            continue
+        kept.append(item)
+    return kept
+
+
+def _rule_score(request: RecommendRequest, item: ParsedItem) -> tuple[float, list[str]]:
+    score = 0.0
+    reasons: list[str] = []
+
+    if request.preferred_sections and item.section:
+        if item.section.lower() in {x.lower() for x in request.preferred_sections}:
+            score += 0.15
+            reasons.append("preferred section")
+
+    if item.description:
+        score += 0.05
+        reasons.append("has description")
+
+    if item.parser_confidence is not None:
+        score += 0.15 * float(item.parser_confidence)
+        reasons.append("parser confidence")
+
+    if request.max_price is not None and item.price_value is not None:
+        if item.price_value <= request.max_price:
+            score += 0.10
+            reasons.append("within budget")
+
+    if request.liked_terms:
+        item_text = _item_text(item).lower()
+        matches = [term for term in request.liked_terms if term.lower() in item_text]
+        if matches:
+            score += 0.20
+            reasons.append("liked terms match")
+
+    return score, reasons
+
+
+def recommend_items(request: RecommendRequest) -> tuple[str, list[RecommendationRow]]:
+    candidates = _apply_filters(request, request.items)
+    if not candidates:
+        return "none", []
+
+    texts = [_item_text(item) for item in candidates]
+    query_text = _query_text(request)
+    engine_result = _semantic_scores(texts, query_text, request.engine)
+
+    rows: list[RecommendationRow] = []
+    for idx, item in enumerate(candidates):
+        rule_score, reasons = _rule_score(request, item)
+        semantic_score = float(engine_result.scores[idx])
+        total_score = 0.70 * semantic_score + 0.30 * rule_score
+        rows.append(
+            RecommendationRow(
+                rank=0,
+                local_id=item.local_id,
+                dish_name=item.dish_name,
+                section=item.section,
+                price_value=item.price_value,
+                score=round(total_score, 4),
+                semantic_score=round(semantic_score, 4),
+                rule_score=round(rule_score, 4),
+                reasons=reasons,
+            )
+        )
+
+    rows.sort(key=lambda row: row.score, reverse=True)
+    top_k = max(1, request.top_k)
+    rows = rows[:top_k]
+
+    for rank, row in enumerate(rows, start=1):
+        row.rank = rank
+
+    return engine_result.engine_used, rows
