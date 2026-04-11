@@ -19,6 +19,9 @@ class Settings(BaseModel):
     default_ocr_langs: str = os.getenv("PICKMEAL_OCR_LANGS", "en")
     parser_metrics_dir: str = os.getenv("PICKMEAL_PARSER_METRICS_DIR", "reports/parser_baseline_v2")
     dataset_summary_path: str = os.getenv("PICKMEAL_DATASET_SUMMARY_PATH", "data/interim/dataset_summary.json")
+    line_role_model_path: str = os.getenv("PICKMEAL_LINE_ROLE_MODEL_PATH", "reports/line_role_baseline/line_role_logreg.joblib")
+    line_role_metrics_path: str = os.getenv("PICKMEAL_LINE_ROLE_METRICS_PATH", "reports/line_role_baseline/line_role_metrics.json")
+    line_role_report_path: str = os.getenv("PICKMEAL_LINE_ROLE_REPORT_PATH", "reports/line_role_baseline/line_role_classification_report.json")
 
 
 @lru_cache(maxsize=1)

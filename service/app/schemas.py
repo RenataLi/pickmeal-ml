@@ -14,6 +14,18 @@ class OCRLine(BaseModel):
     bbox_y2: float | None = None
 
 
+class LineRolePrediction(BaseModel):
+    text: str
+    predicted_label: str
+    predicted_score: float | None = None
+    line_order: int | None = None
+    ocr_confidence: float | None = None
+    bbox_x1: float | None = None
+    bbox_y1: float | None = None
+    bbox_x2: float | None = None
+    bbox_y2: float | None = None
+
+
 class ParsedItem(BaseModel):
     local_id: str
     dish_name: str
@@ -33,7 +45,10 @@ class ParseTextRequest(BaseModel):
 class ParseResponse(BaseModel):
     n_lines: int
     n_items: int
+    parser_module: str | None = None
+    line_role_model_loaded: bool = False
     ocr_lines: list[OCRLine] = Field(default_factory=list)
+    line_roles: list[LineRolePrediction] = Field(default_factory=list)
     items: list[ParsedItem] = Field(default_factory=list)
 
 
@@ -49,7 +64,14 @@ class DatasetStatsResponse(BaseModel):
 
 class ParserStatsResponse(BaseModel):
     metrics: dict[str, Any]
+    active_parser_module: str | None = None
+    active_metrics_dir: str | None = None
     comparison_rows: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class LineRoleStatsResponse(BaseModel):
+    metrics: dict[str, Any]
+    report: dict[str, Any] = Field(default_factory=dict)
 
 
 class RecommendRequest(BaseModel):
