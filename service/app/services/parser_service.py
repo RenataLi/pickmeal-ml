@@ -32,7 +32,9 @@ def load_parser_function() -> ParserFn:
 
     candidates = [
         settings.parser_module,
+        "pickmeal_ml.models.menu_structuring_baseline_v3",
         "pickmeal_ml.models.menu_structuring_baseline_v2",
+        "menu_structuring_baseline_v3",
         "menu_structuring_baseline_v2",
     ]
 
@@ -46,7 +48,9 @@ def load_parser_function() -> ParserFn:
 
     project_root = settings.project_root
     file_candidates = [
+        project_root / "src" / "pickmeal_ml" / "models" / "menu_structuring_baseline_v3.py",
         project_root / "src" / "pickmeal_ml" / "models" / "menu_structuring_baseline_v2.py",
+        project_root / "menu_structuring_baseline_v3.py",
         project_root / "menu_structuring_baseline_v2.py",
     ]
     for file_path in file_candidates:
@@ -55,6 +59,11 @@ def load_parser_function() -> ParserFn:
             return getattr(module, "parse_menu_lines")
 
     raise ImportError(f"Unable to load parser module. Last error: {last_error}")
+
+
+def get_parser_module_name() -> str:
+    settings = get_settings()
+    return settings.parser_module
 
 
 def normalize_input_lines(lines: Iterable[str | OCRLine | dict]) -> list[dict]:
