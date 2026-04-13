@@ -102,6 +102,10 @@ class RecommendRequest(BaseModel):
     excluded_sections: list[str] = Field(default_factory=list)
     max_price: float | None = None
     max_calories: float | None = None
+    combo_budget: float | None = None
+    combo_max_calories: float | None = None
+    combo_min_items: int = 2
+    combo_max_items: int = 3
     top_k: int = 5
     engine: Literal["auto", "tfidf", "sentence_transformer"] = "auto"
 
@@ -121,7 +125,20 @@ class RecommendationRow(BaseModel):
     reasons: list[str] = Field(default_factory=list)
 
 
+class CombinationRow(BaseModel):
+    rank: int
+    item_ids: list[str] = Field(default_factory=list)
+    dish_names: list[str] = Field(default_factory=list)
+    sections: list[str] = Field(default_factory=list)
+    total_price: float | None = None
+    total_calories: float | None = None
+    score: float
+    match_label: str | None = None
+    reasons: list[str] = Field(default_factory=list)
+
+
 class RecommendResponse(BaseModel):
     engine_used: str
     n_candidates: int
     rows: list[RecommendationRow] = Field(default_factory=list)
+    combo_rows: list[CombinationRow] = Field(default_factory=list)

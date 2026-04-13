@@ -554,6 +554,50 @@ def render_recommendation_cards(rec_df: pd.DataFrame):
         )
 
 
+def render_combo_cards(combo_df: pd.DataFrame):
+    if combo_df.empty:
+        st.info("No feasible dish combinations matched the current budget or calorie limits.")
+        return
+
+    for _, row in combo_df.iterrows():
+        reasons = row.get("reasons", [])
+        if not isinstance(reasons, list):
+            reasons = []
+        reasons_html = "".join(f"<span class='pm-soft-pill'>{reason}</span>" for reason in reasons[:6])
+        dishes = row.get("dish_names", [])
+        if not isinstance(dishes, list):
+            dishes = []
+        sections = row.get("sections", [])
+        if not isinstance(sections, list):
+            sections = []
+        combo_title = " + ".join(dishes[:4]) if dishes else "Dish combination"
+        section_text = ", ".join(sorted(set(sections))) if sections else "Mixed sections"
+        total_price = row.get("total_price")
+        total_price_text = f"Total price: {total_price}" if pd.notna(total_price) else "Total price: —"
+        total_calories = row.get("total_calories")
+        total_calories_text = f"{int(total_calories)} kcal" if pd.notna(total_calories) else "kcal: —"
+        match_label = row.get("match_label") or "Match"
+
+        st.markdown(
+            f"""
+            <div class='pm-reco-card'>
+                <div class='pm-reco-top'>
+                    <div style='display:flex;gap:14px;align-items:flex-start;'>
+                        <div class='pm-rank'>{int(row.get('rank', 0))}</div>
+                        <div>
+                            <p class='pm-reco-name'>{combo_title}</p>
+                            <div class='pm-reco-meta'>{section_text} · {total_price_text} · {total_calories_text}</div>
+                        </div>
+                    </div>
+                    <div class='pm-reco-score'>{match_label}</div>
+                </div>
+                <div class='pm-reco-reasons'>{reasons_html}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+
 def overlay_ocr_boxes(image: Image.Image, ocr_df: pd.DataFrame) -> Image.Image:
     canvas = image.copy()
     draw = ImageDraw.Draw(canvas)
@@ -691,7 +735,7 @@ def render_how_it_works():
         3. The parser builds menu items from names, descriptions, prices, and sections.
         4. The line-role model labels OCR rows as item, price, section, description, or noise.
         5. A nutrition layer adds ingredient hints, allergen signals, diet flags, and calorie ranges.
-        6. The recommendation layer applies hard filters and then ranks relevant dishes for the user request.
+        6. The recommendation layer applies hard filters, ranks relevant dishes, and can build feasible dish combinations under budget and calorie limits.
         """
     )
 
@@ -840,9 +884,16 @@ with home_tab:
                 excluded_allergens = st.text_input("Excluded allergens (comma-separated)", value="peanut")
                 required_diet_flags = st.text_input("Required diet flags (comma-separated)", value="")
                 preferred_sections = st.text_input("Preferred menu sections (comma-separated)", value="pasta")
-                max_price = st.number_input("Max price", min_value=0.0, value=500.0)
+                max_price = st.number_input("Max dish price", min_value=0.0, value=500.0)
                 max_calories = st.number_input("Max calories", min_value=0.0, value=700.0)
                 engine = st.selectbox("Recommendation engine", ["auto", "tfidf", "sentence_transformer"], index=0)
+            combo_col1, combo_col2 = st.columns(2)
+            with combo_col1:
+                combo_budget = st.number_input("Combination budget", min_value=0.0, value=0.0)
+                combo_min_items = st.selectbox("Min dishes in combo", options=[2, 3], index=0)
+            with combo_col2:
+                combo_max_calories = st.number_input("Combination max calories", min_value=0.0, value=0.0)
+                combo_max_items = st.selectbox("Max dishes in combo", options=[2, 3], index=1)
             recommend_clicked = st.form_submit_button("Recommend dishes")
 
         if recommend_clicked:
@@ -856,6 +907,10 @@ with home_tab:
                 "preferred_sections": [x.strip() for x in preferred_sections.split(",") if x.strip()],
                 "max_price": max_price,
                 "max_calories": max_calories,
+                "combo_budget": combo_budget if combo_budget > 0 else None,
+                "combo_max_calories": combo_max_calories if combo_max_calories > 0 else None,
+                "combo_min_items": combo_min_items,
+                "combo_max_items": combo_max_items,
                 "top_k": 5,
                 "engine": engine,
             }
@@ -882,8 +937,14 @@ with home_tab:
             st.info(f"Engine used: {recommend_payload.get('engine_used')}")
             rec_df = pd.DataFrame(recommend_payload.get("rows", []))
             render_recommendation_cards(rec_df)
+            combo_df = pd.DataFrame(recommend_payload.get("combo_rows", []))
+            st.markdown("<p class='pm-section-title'>Dish combinations</p>", unsafe_allow_html=True)
+            render_combo_cards(combo_df)
             with st.expander("Recommendation table"):
                 show_dataframe(rec_df, height=260)
+            if not combo_df.empty:
+                with st.expander("Combination table"):
+                    show_dataframe(combo_df, height=260)
 
         if show_developer_tools:
             st.markdown("### Raw response")
