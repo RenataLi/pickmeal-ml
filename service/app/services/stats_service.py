@@ -12,6 +12,7 @@ from .ocr_service import get_ocr_runtime_info
 PARSER_REPORTS = [
     ("Parser v1", "reports/parser_baseline"),
     ("Parser v2", "reports/parser_baseline_v2"),
+    ("Parser cascade v1 expanded", "reports/parser_cascade_v1_expanded"),
     ("Parser line-role v3", "reports/parser_line_role_v3"),
     ("Parser line-role v3 layout", "reports/parser_line_role_v3_layout"),
     ("Parser hybrid merge v31", "reports/parser_hybrid_merge_v31"),

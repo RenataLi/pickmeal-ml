@@ -1,0 +1,10 @@
+{
+  "n_train_rows": 7629,
+  "n_test_rows": 2096,
+  "n_train_menus": 100,
+  "n_test_menus": 26,
+  "model_type": "sgd_log_loss",
+  "accuracy": 0.8483,
+  "macro_f1": 0.7023,
+  "weighted_f1": 0.8492
+}
