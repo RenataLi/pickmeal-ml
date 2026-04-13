@@ -19,10 +19,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY service/requirements-service.txt /app/service/requirements-service.txt
-RUN pip install -r /app/service/requirements-service.txt
+COPY service/requirements-docker.txt /app/service/requirements-docker.txt
+RUN pip install -r /app/service/requirements-docker.txt
 
-COPY . /app
+COPY README.md /app/README.md
+COPY service /app/service
+COPY src /app/src
+COPY data/interim/dataset_summary.json /app/data/interim/dataset_summary.json
+COPY reports/line_role_baseline /app/reports/line_role_baseline
+COPY reports/line_role_expanded_sgd_v1 /app/reports/line_role_expanded_sgd_v1
+COPY reports/parser_cascade_v1_expanded /app/reports/parser_cascade_v1_expanded
+COPY reports/ocr_backend_benchmark_cascade_v1 /app/reports/ocr_backend_benchmark_cascade_v1
 
 RUN mkdir -p /app/.cache/paddlex_cache /app/.cache/matplotlib_cache
 
