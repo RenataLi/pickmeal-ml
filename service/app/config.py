@@ -17,10 +17,12 @@ class Settings(BaseModel):
         "pickmeal_ml.models.menu_structuring_cascade_v1",
     )
     default_ocr_langs: str = os.getenv("PICKMEAL_OCR_LANGS", "en")
-    ocr_backend: str = os.getenv("PICKMEAL_OCR_BACKEND", "paddleocr")
+    ocr_backend: str = os.getenv("PICKMEAL_OCR_BACKEND", "auto")
     ocr_fallback_backend: str = os.getenv("PICKMEAL_OCR_FALLBACK_BACKEND", "easyocr")
-    paddle_cache_dir: str = os.getenv("PICKMEAL_PADDLE_CACHE_DIR", "/tmp/paddlex_cache")
-    paddle_mpl_config_dir: str = os.getenv("PICKMEAL_PADDLE_MPLCONFIGDIR", "/tmp/matplotlib_cache")
+    paddle_cache_dir: str
+    paddle_mpl_config_dir: str
+    paddle_text_detection_model_name: str = os.getenv("PICKMEAL_PADDLE_DET_MODEL", "PP-OCRv5_server_det")
+    ocr_max_image_side: int = int(os.getenv("PICKMEAL_OCR_MAX_IMAGE_SIDE", "2560"))
     parser_metrics_dir: str = os.getenv("PICKMEAL_PARSER_METRICS_DIR", "reports/parser_cascade_v1_expanded")
     dataset_summary_path: str = os.getenv("PICKMEAL_DATASET_SUMMARY_PATH", "data/interim/dataset_summary.json")
     line_role_model_path: str = os.getenv("PICKMEAL_LINE_ROLE_MODEL_PATH", "reports/line_role_expanded_sgd_v1/line_role_logreg.joblib")
@@ -31,4 +33,9 @@ class Settings(BaseModel):
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     project_root = ensure_src_on_path()
-    return Settings(project_root=project_root)
+    cache_root = project_root / ".cache"
+    return Settings(
+        project_root=project_root,
+        paddle_cache_dir=os.getenv("PICKMEAL_PADDLE_CACHE_DIR", str(cache_root / "paddlex_cache")),
+        paddle_mpl_config_dir=os.getenv("PICKMEAL_PADDLE_MPLCONFIGDIR", str(cache_root / "matplotlib_cache")),
+    )

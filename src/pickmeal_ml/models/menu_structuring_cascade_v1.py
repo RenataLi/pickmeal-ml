@@ -85,6 +85,25 @@ def should_keep_item(item: dict, candidates: list[str]) -> bool:
     return False
 
 
+def should_use_filtered_items(baseline_items: list[dict], filtered_items: list[dict]) -> bool:
+    if not filtered_items:
+        return False
+    if len(baseline_items) < 6:
+        return True
+
+    baseline_count = len(baseline_items)
+    filtered_count = len(filtered_items)
+    if filtered_count < max(4, int(round(0.65 * baseline_count))):
+        return False
+
+    baseline_priced = sum(1 for item in baseline_items if item.get("price_value") is not None or item.get("price_text") is not None)
+    filtered_priced = sum(1 for item in filtered_items if item.get("price_value") is not None or item.get("price_text") is not None)
+    if baseline_priced >= 6 and filtered_priced < max(4, int(round(0.60 * baseline_priced))):
+        return False
+
+    return True
+
+
 def parse_menu_lines(lines):
     baseline_items = parse_baseline_v2(lines)
     has_layout = False
@@ -103,6 +122,6 @@ def parse_menu_lines(lines):
             item = dict(item)
             item["parser_confidence"] = round(max(float(item.get("parser_confidence") or 0.5), min(score + 0.2, 0.95)), 3)
             filtered.append(item)
-    if not filtered and baseline_items:
+    if not should_use_filtered_items(baseline_items, filtered):
         return baseline_items
     return filtered
