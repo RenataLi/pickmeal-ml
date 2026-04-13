@@ -45,6 +45,7 @@ class ParseTextRequest(BaseModel):
 class ParseResponse(BaseModel):
     n_lines: int
     n_items: int
+    ocr_backend: str | None = None
     parser_module: str | None = None
     line_role_model_loaded: bool = False
     ocr_lines: list[OCRLine] = Field(default_factory=list)
@@ -72,6 +73,13 @@ class ParserStatsResponse(BaseModel):
 class LineRoleStatsResponse(BaseModel):
     metrics: dict[str, Any]
     report: dict[str, Any] = Field(default_factory=dict)
+
+
+class OCRStatsResponse(BaseModel):
+    requested_backend: str
+    fallback_backend: str | None = None
+    available_backends: dict[str, bool] = Field(default_factory=dict)
+    paddle_cache_dir: str | None = None
 
 
 class RecommendRequest(BaseModel):

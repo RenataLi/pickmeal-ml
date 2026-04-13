@@ -6,6 +6,7 @@ from pathlib import Path
 import pandas as pd
 
 from ..config import get_settings
+from .ocr_service import get_ocr_runtime_info
 
 
 PARSER_REPORTS = [
@@ -81,3 +82,7 @@ def load_line_role_report() -> dict:
     settings = get_settings()
     path = settings.project_root / settings.line_role_report_path
     return _load_json(path)
+
+
+def load_ocr_stats() -> dict:
+    return get_ocr_runtime_info()

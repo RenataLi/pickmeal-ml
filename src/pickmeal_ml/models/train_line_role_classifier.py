@@ -7,11 +7,12 @@ import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.impute import SimpleImputer
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, f1_score
 from sklearn.model_selection import GroupShuffleSplit
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MaxAbsScaler
+from sklearn.svm import LinearSVC
 
 
 NUMERIC_COLS = [
@@ -41,7 +42,19 @@ def resolve_project_root():
     raise FileNotFoundError("Project root with data/ was not found.")
 
 
-def make_pipeline():
+def make_model(model_type: str):
+    if model_type == "logreg":
+        return LogisticRegression(max_iter=1500, class_weight="balanced", n_jobs=None)
+    if model_type == "linear_svc":
+        return LinearSVC(class_weight="balanced")
+    if model_type == "sgd_log_loss":
+        return SGDClassifier(loss="log_loss", class_weight="balanced", random_state=42)
+    if model_type == "sgd_modified_huber":
+        return SGDClassifier(loss="modified_huber", class_weight="balanced", random_state=42)
+    raise ValueError(f"Unsupported model_type: {model_type}")
+
+
+def make_pipeline(model_type: str):
     text_word = TfidfVectorizer(ngram_range=(1, 2), min_df=1, lowercase=True)
     text_char = TfidfVectorizer(analyzer="char_wb", ngram_range=(3, 5), min_df=1, lowercase=True)
 
@@ -60,7 +73,7 @@ def make_pipeline():
         ]
     )
 
-    model = LogisticRegression(max_iter=1500, class_weight="balanced", n_jobs=None)
+    model = make_model(model_type)
     return Pipeline(steps=[("features", features), ("model", model)])
 
 
@@ -71,7 +84,7 @@ def split_groups(df: pd.DataFrame, test_size: float, random_state: int):
     return df.iloc[train_idx].copy(), df.iloc[test_idx].copy()
 
 
-def main(input_path: Path, out_dir: Path, test_size: float, random_state: int):
+def main(input_path: Path, out_dir: Path, test_size: float, random_state: int, model_type: str):
     df = pd.read_csv(input_path)
     if len(df) == 0:
         raise ValueError("Input dataset is empty.")
@@ -83,7 +96,7 @@ def main(input_path: Path, out_dir: Path, test_size: float, random_state: int):
     X_test = test_df[["text"] + NUMERIC_COLS]
     y_test = test_df["label"]
 
-    pipe = make_pipeline()
+    pipe = make_pipeline(model_type=model_type)
     pipe.fit(X_train, y_train)
     pred = pipe.predict(X_test)
 
@@ -92,6 +105,7 @@ def main(input_path: Path, out_dir: Path, test_size: float, random_state: int):
         "n_test_rows": int(len(test_df)),
         "n_train_menus": int(train_df["menu_id"].nunique()),
         "n_test_menus": int(test_df["menu_id"].nunique()),
+        "model_type": model_type,
         "accuracy": round(float(accuracy_score(y_test, pred)), 4),
         "macro_f1": round(float(f1_score(y_test, pred, average="macro")), 4),
         "weighted_f1": round(float(f1_score(y_test, pred, average="weighted")), 4),
@@ -133,6 +147,7 @@ if __name__ == "__main__":
     parser.add_argument("--out_dir", type=str, default="reports/line_role_baseline")
     parser.add_argument("--test_size", type=float, default=0.2)
     parser.add_argument("--random_state", type=int, default=42)
+    parser.add_argument("--model_type", type=str, default="logreg")
     args = parser.parse_args()
 
     project_root = resolve_project_root()
@@ -141,4 +156,5 @@ if __name__ == "__main__":
         out_dir=project_root / args.out_dir,
         test_size=args.test_size,
         random_state=args.random_state,
+        model_type=args.model_type,
     )

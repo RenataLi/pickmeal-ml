@@ -17,6 +17,10 @@ class Settings(BaseModel):
         "pickmeal_ml.models.menu_structuring_baseline_v2",
     )
     default_ocr_langs: str = os.getenv("PICKMEAL_OCR_LANGS", "en")
+    ocr_backend: str = os.getenv("PICKMEAL_OCR_BACKEND", "paddleocr")
+    ocr_fallback_backend: str = os.getenv("PICKMEAL_OCR_FALLBACK_BACKEND", "easyocr")
+    paddle_cache_dir: str = os.getenv("PICKMEAL_PADDLE_CACHE_DIR", "/tmp/paddlex_cache")
+    paddle_mpl_config_dir: str = os.getenv("PICKMEAL_PADDLE_MPLCONFIGDIR", "/tmp/matplotlib_cache")
     parser_metrics_dir: str = os.getenv("PICKMEAL_PARSER_METRICS_DIR", "reports/parser_baseline_v2")
     dataset_summary_path: str = os.getenv("PICKMEAL_DATASET_SUMMARY_PATH", "data/interim/dataset_summary.json")
     line_role_model_path: str = os.getenv("PICKMEAL_LINE_ROLE_MODEL_PATH", "reports/line_role_baseline/line_role_logreg.joblib")

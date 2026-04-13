@@ -1,0 +1,3 @@
+n_pages,item_precision,item_recall,item_f1,section_accuracy,price_accuracy,description_exact_match,item_tp,item_fp,item_fn,avg_ocr_lines,avg_ocr_confidence,backend
+12,0.622,0.5789,0.5997,0.5932,0.4495,0.0,209,127,152,53.33,0.7651,easyocr
+12,0.7895,0.6233,0.6966,0.5873,0.922,0.0,225,60,136,64.58,0.9881,paddleocr
