@@ -1,0 +1,34 @@
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PYTHONPATH=/app/src \
+    PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK=1 \
+    PICKMEAL_PADDLE_CACHE_DIR=/app/.cache/paddlex_cache \
+    PICKMEAL_PADDLE_MPLCONFIGDIR=/app/.cache/matplotlib_cache
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY service/requirements-service.txt /app/service/requirements-service.txt
+RUN pip install -r /app/service/requirements-service.txt
+
+COPY . /app
+
+RUN mkdir -p /app/.cache/paddlex_cache /app/.cache/matplotlib_cache
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)"
+
+CMD ["uvicorn", "service.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
