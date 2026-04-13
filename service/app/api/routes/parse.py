@@ -5,7 +5,7 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from ...config import get_settings
 from ...schemas import OCRLine, ParseResponse, ParseTextRequest
 from ...services.line_role_service import line_role_model_is_available, predict_line_roles
-from ...services.ocr_service import run_easyocr
+from ...services.ocr_service import run_ocr
 from ...services.parser_service import get_parser_module_name, parse_lines
 
 router = APIRouter(prefix="/parse", tags=["parse"])
@@ -27,6 +27,7 @@ def parse_text(payload: ParseTextRequest) -> ParseResponse:
     return ParseResponse(
         n_lines=len(ocr_lines),
         n_items=len(items),
+        ocr_backend="text_input",
         parser_module=settings.parser_module or get_parser_module_name(),
         line_role_model_loaded=line_role_model_is_available(),
         ocr_lines=ocr_lines,
@@ -43,12 +44,14 @@ async def parse_image(
     settings = get_settings()
     try:
         content = await file.read()
-        ocr_lines = run_easyocr(content, langs=langs)
+        ocr_result = run_ocr(content, langs=langs)
+        ocr_lines = ocr_result.lines
         items = parse_lines(ocr_lines)
         line_roles = predict_line_roles(ocr_lines)
         return ParseResponse(
             n_lines=len(ocr_lines),
             n_items=len(items),
+            ocr_backend=ocr_result.backend,
             parser_module=settings.parser_module or get_parser_module_name(),
             line_role_model_loaded=line_role_model_is_available(),
             ocr_lines=ocr_lines,

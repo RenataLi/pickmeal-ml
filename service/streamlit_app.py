@@ -447,6 +447,7 @@ def metric_card(title: str, value: str, help_text: str | None = None):
 
 def render_summary_cards(payload: dict, items_df: pd.DataFrame, ocr_df: pd.DataFrame, line_roles_df: pd.DataFrame):
     parser_label = payload.get("parser_module", "unknown").split(".")[-1]
+    ocr_backend = payload.get("ocr_backend", "unknown")
     line_role_status = "loaded" if payload.get("line_role_model_loaded") else "not loaded"
     avg_conf = "—"
     if not ocr_df.empty and "ocr_confidence" in ocr_df.columns:
@@ -463,9 +464,14 @@ def render_summary_cards(payload: dict, items_df: pd.DataFrame, ocr_df: pd.DataF
                 <div class='meta'>Structured menu items</div>
             </div>
             <div class='pm-summary-card'>
-                <div class='label'>OCR lines</div>
-                <div class='value'>{len(ocr_df)}</div>
-                <div class='meta'>Detected text rows</div>
+                <div class='label'>OCR backend</div>
+                <div class='value' style='font-size:1.2rem'>{ocr_backend}</div>
+                <div class='meta'>{len(ocr_df)} detected text rows</div>
+            </div>
+            <div class='pm-summary-card'>
+                <div class='label'>OCR confidence</div>
+                <div class='value'>{avg_conf}</div>
+                <div class='meta'>{len(ocr_df)} detected text rows</div>
             </div>
             <div class='pm-summary-card'>
                 <div class='label'>Active parser</div>
@@ -475,7 +481,7 @@ def render_summary_cards(payload: dict, items_df: pd.DataFrame, ocr_df: pd.DataF
             <div class='pm-summary-card'>
                 <div class='label'>Line-role model</div>
                 <div class='value' style='font-size:1.2rem'>{line_role_status}</div>
-                <div class='meta'>{len(line_roles_df)} labels, avg OCR conf {avg_conf}</div>
+                <div class='meta'>{len(line_roles_df)} predicted labels</div>
             </div>
         </div>
         """,
@@ -486,6 +492,7 @@ def render_summary_cards(payload: dict, items_df: pd.DataFrame, ocr_df: pd.DataF
 def render_status_chips(payload: dict):
     parser_label = payload.get("parser_module", "unknown").split(".")[-1]
     chips = [
+        f"<span class='pm-chip'>OCR: {payload.get('ocr_backend', 'unknown')}</span>",
         f"<span class='pm-chip'>Parser: {parser_label}</span>",
         f"<span class='pm-chip'>Line-role: {'available' if payload.get('line_role_model_loaded') else 'missing'}</span>",
     ]

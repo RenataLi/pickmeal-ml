@@ -1,0 +1,32 @@
+[
+  {
+    "n_pages": 12,
+    "item_precision": 0.622,
+    "item_recall": 0.5789,
+    "item_f1": 0.5997,
+    "section_accuracy": 0.5932,
+    "price_accuracy": 0.4495,
+    "description_exact_match": 0.0,
+    "item_tp": 209,
+    "item_fp": 127,
+    "item_fn": 152,
+    "avg_ocr_lines": 53.33,
+    "avg_ocr_confidence": 0.7651,
+    "backend": "easyocr"
+  },
+  {
+    "n_pages": 12,
+    "item_precision": 0.7895,
+    "item_recall": 0.6233,
+    "item_f1": 0.6966,
+    "section_accuracy": 0.5873,
+    "price_accuracy": 0.922,
+    "description_exact_match": 0.0,
+    "item_tp": 225,
+    "item_fp": 60,
+    "item_fn": 136,
+    "avg_ocr_lines": 64.58,
+    "avg_ocr_confidence": 0.9881,
+    "backend": "paddleocr"
+  }
+]
