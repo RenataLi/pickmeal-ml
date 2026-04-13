@@ -14,18 +14,18 @@ class Settings(BaseModel):
     api_version: str = "0.1.0"
     parser_module: str = os.getenv(
         "PICKMEAL_PARSER_MODULE",
-        "pickmeal_ml.models.menu_structuring_baseline_v2",
+        "pickmeal_ml.models.menu_structuring_cascade_v1",
     )
     default_ocr_langs: str = os.getenv("PICKMEAL_OCR_LANGS", "en")
     ocr_backend: str = os.getenv("PICKMEAL_OCR_BACKEND", "paddleocr")
     ocr_fallback_backend: str = os.getenv("PICKMEAL_OCR_FALLBACK_BACKEND", "easyocr")
     paddle_cache_dir: str = os.getenv("PICKMEAL_PADDLE_CACHE_DIR", "/tmp/paddlex_cache")
     paddle_mpl_config_dir: str = os.getenv("PICKMEAL_PADDLE_MPLCONFIGDIR", "/tmp/matplotlib_cache")
-    parser_metrics_dir: str = os.getenv("PICKMEAL_PARSER_METRICS_DIR", "reports/parser_baseline_v2")
+    parser_metrics_dir: str = os.getenv("PICKMEAL_PARSER_METRICS_DIR", "reports/parser_cascade_v1_expanded")
     dataset_summary_path: str = os.getenv("PICKMEAL_DATASET_SUMMARY_PATH", "data/interim/dataset_summary.json")
-    line_role_model_path: str = os.getenv("PICKMEAL_LINE_ROLE_MODEL_PATH", "reports/line_role_baseline/line_role_logreg.joblib")
-    line_role_metrics_path: str = os.getenv("PICKMEAL_LINE_ROLE_METRICS_PATH", "reports/line_role_baseline/line_role_metrics.json")
-    line_role_report_path: str = os.getenv("PICKMEAL_LINE_ROLE_REPORT_PATH", "reports/line_role_baseline/line_role_classification_report.json")
+    line_role_model_path: str = os.getenv("PICKMEAL_LINE_ROLE_MODEL_PATH", "reports/line_role_expanded_sgd_v1/line_role_logreg.joblib")
+    line_role_metrics_path: str = os.getenv("PICKMEAL_LINE_ROLE_METRICS_PATH", "reports/line_role_expanded_sgd_v1/line_role_metrics.json")
+    line_role_report_path: str = os.getenv("PICKMEAL_LINE_ROLE_REPORT_PATH", "reports/line_role_expanded_sgd_v1/line_role_classification_report.json")
 
 
 @lru_cache(maxsize=1)

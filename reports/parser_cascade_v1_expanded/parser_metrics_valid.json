@@ -1,0 +1,12 @@
+{
+  "n_menus": 20,
+  "item_precision": 0.3479,
+  "item_recall": 0.2169,
+  "item_f1": 0.2672,
+  "section_accuracy": 0.3533,
+  "price_accuracy": 0.4251,
+  "description_exact_match": 0.0,
+  "item_tp": 167,
+  "item_fp": 313,
+  "item_fn": 603
+}

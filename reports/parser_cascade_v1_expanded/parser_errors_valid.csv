@@ -1,0 +1,1114 @@
+menu_id,page_id,error_type,pred_name,gold_name
+batch_001_002,p1,false_positive_item,Table Accompaniments,
+batch_001_002,p1,false_positive_item,Buhet Accompaniments,
+batch_001_002,p1,missed_gold_item,,Veg Soup
+batch_001_002,p1,missed_gold_item,,Non-Veg Soup
+batch_001_002,p1,missed_gold_item,,6 varieties of Veg Salads
+batch_001_002,p1,missed_gold_item,,2 Non-Veg Salads
+batch_001_002,p1,missed_gold_item,,4 Vegetarian & 3 Non-Vegetarian
+batch_001_002,p1,missed_gold_item,,4 Vegetarian & 3 Non-Vegetarian
+batch_001_002,p1,missed_gold_item,,10 Vegetarian & 5 Non-Vegetarian
+batch_001_002,p1,missed_gold_item,,11 Continental & Indian
+batch_001_002,p1,missed_gold_item,,6 Flavours
+batch_001_002,p1,missed_gold_item,,Table Accompaniments - 4 Flavours
+batch_001_002,p1,missed_gold_item,,Buffet Accompaniments - 5 Numbers
+batch_001_007,p1,wrong_section,Baracdi Gold,Baracdi Gold
+batch_001_007,p1,wrong_price,Baracdi Gold,Baracdi Gold
+batch_001_007,p1,wrong_section,BaCaDRI Limon,Bacadri Limon
+batch_001_007,p1,wrong_price,BaCaDRI Limon,Bacadri Limon
+batch_001_007,p1,wrong_section,BacaRDI ApPLe,Bacardi Apple
+batch_001_007,p1,wrong_price,BacaRDI ApPLe,Bacardi Apple
+batch_001_007,p1,false_positive_item,bacardi breezers,
+batch_001_007,p1,wrong_section,Fosters,Fosters
+batch_001_007,p1,wrong_price,Fosters,Fosters
+batch_001_007,p1,false_positive_item,tudorc Gold,
+batch_001_007,p1,missed_gold_item,,Bacardi White Rum
+batch_001_007,p1,missed_gold_item,,Bacardi Razz
+batch_001_007,p1,missed_gold_item,,Old Monk Dark Rum
+batch_001_007,p1,missed_gold_item,,M/C Dowell Rum
+batch_001_007,p1,missed_gold_item,,St Remy Brandy
+batch_001_007,p1,missed_gold_item,,Honey Bee
+batch_001_007,p1,missed_gold_item,,Bailey's
+batch_001_007,p1,missed_gold_item,,Malibu
+batch_001_007,p1,missed_gold_item,,Kahlua
+batch_001_007,p1,missed_gold_item,,Cointreau
+batch_001_007,p1,missed_gold_item,,Peach Schnapps
+batch_001_007,p1,missed_gold_item,,Cranberry
+batch_001_007,p1,missed_gold_item,,Orange
+batch_001_007,p1,missed_gold_item,,Lime
+batch_001_007,p1,missed_gold_item,,Jamaican Passion
+batch_001_007,p1,missed_gold_item,,Lychee
+batch_001_007,p1,missed_gold_item,,Kingfisher Mild
+batch_001_007,p1,missed_gold_item,,Budwiser
+batch_001_007,p1,missed_gold_item,,Tuborg Green
+batch_001_007,p1,missed_gold_item,,Carlsberg
+batch_001_007,p1,missed_gold_item,,Haywards 5000
+batch_001_007,p1,missed_gold_item,,Kingfisher Strong
+batch_001_007,p1,missed_gold_item,,Tuborg Gold
+batch_001_007,p1,missed_gold_item,,Budwiser Magnum
+batch_001_007,p1,missed_gold_item,,Carlsberg Elephant
+batch_001_007,p1,missed_gold_item,,Corona Extra
+batch_001_015,p1,false_positive_item,Chilly,
+batch_001_015,p1,false_positive_item,Noodles,
+batch_001_015,p1,false_positive_item,Veg Triple Schezwan,
+batch_001_015,p1,wrong_section,Paneer Parda,Paneer Parda
+batch_001_015,p1,wrong_section,Veg Seekh Kebab,Veg Seekh Kebab
+batch_001_015,p1,wrong_section,Paneer Achari Tikka,Paneer Achari Tikka
+batch_001_015,p1,wrong_section,Methi Corn Kebab,Methi Corn Kebab
+batch_001_015,p1,wrong_section,Paneer Kasturi Tikka,Paneer Kasturi Tikka
+batch_001_015,p1,wrong_section,Hara Bhara Kebab,Hara Bhara Kebab
+batch_001_015,p1,wrong_section,Paneer Garlic Tikka,Paneer Garlic Tikka
+batch_001_015,p1,false_positive_item,Tandoori Garlic,
+batch_001_015,p1,wrong_section,Paneer Pahadi Tikka,Paneer Pahadi Tikka
+batch_001_015,p1,wrong_section,Cheese Seekh Kebab,Cheese Seekh Kebab
+batch_001_015,p1,wrong_section,Veg Platter,Veg Platter
+batch_001_015,p1,false_positive_item,Garlic,
+batch_001_015,p1,false_positive_item,"Rice""",
+batch_001_015,p1,missed_gold_item,,Chilly Garlic Noodles
+batch_001_015,p1,missed_gold_item,,Veg Triple Schezwan Rice
+batch_001_015,p1,missed_gold_item,,Tandoori Garlic Mushroom
+batch_002_002,p1,false_positive_item,Mix,
+batch_002_002,p1,false_positive_item,Raita,
+batch_002_002,p1,false_positive_item,Corn; Cucumber,
+batch_002_002,p1,false_positive_item,Mushroom Salad,
+batch_002_002,p1,false_positive_item,Chicken; Bell pepper,
+batch_002_002,p1,false_positive_item,Lettuce Salad,
+batch_002_002,p1,false_positive_item,Honey Chilly Babycorn,
+batch_002_002,p1,false_positive_item,Lotus Stem,
+batch_002_002,p1,false_positive_item,Ke Kebab,
+batch_002_002,p1,false_positive_item,Hot Chicken,
+batch_002_002,p1,false_positive_item,Cheese Veg,
+batch_002_002,p1,false_positive_item,Wings,
+batch_002_002,p1,missed_gold_item,,Mix Veg Raita
+batch_002_002,p1,missed_gold_item,,"Corn, Cucumber & Mushroom Salad"
+batch_002_002,p1,missed_gold_item,,"Chicken, Bell pepper & Lettuce Salad"
+batch_002_002,p1,missed_gold_item,,Honey Chilly Babycorn & Lotus Stem
+batch_002_002,p1,missed_gold_item,,Lahori Andey Ke Kebab
+batch_002_002,p1,missed_gold_item,,Hot Chicken Wings
+batch_002_002,p1,missed_gold_item,,Mac & Cheese Veg
+batch_002_010,p1,missed_gold_item,,Peppermint Tea
+batch_003_003,p1,wrong_section,Rajwadi Chhappan Bhog,Rajwadi Chhappan Bhog
+batch_003_003,p1,wrong_price,Rajwadi Chhappan Bhog,Rajwadi Chhappan Bhog
+batch_003_003,p1,wrong_section,Hazel Mania,Hazel Mania
+batch_003_003,p1,wrong_price,Hazel Mania,Hazel Mania
+batch_003_003,p1,wrong_section,Chocolate Brownie,Chocolate Brownie
+batch_003_003,p1,wrong_price,Chocolate Brownie,Chocolate Brownie
+batch_003_003,p1,wrong_section,Kesar Pista,Kesar Pista
+batch_003_003,p1,wrong_price,Kesar Pista,Kesar Pista
+batch_003_003,p1,wrong_section,Belgian Chocolate,Belgian Chocolate
+batch_003_003,p1,wrong_price,Belgian Chocolate,Belgian Chocolate
+batch_003_003,p1,wrong_section,Anjir Badam,Anjir Badam
+batch_003_003,p1,wrong_price,Anjir Badam,Anjir Badam
+batch_003_003,p1,wrong_section,Cookies & Cream,Cookies & Cream
+batch_003_003,p1,wrong_price,Cookies & Cream,Cookies & Cream
+batch_003_003,p1,wrong_section,American Nuts,American Nuts
+batch_003_003,p1,wrong_price,American Nuts,American Nuts
+batch_003_003,p1,wrong_section,Choco Chips,Choco Chips
+batch_003_003,p1,wrong_price,Choco Chips,Choco Chips
+batch_003_003,p1,wrong_section,Butterscotch,Butterscotch
+batch_003_003,p1,wrong_price,Butterscotch,Butterscotch
+batch_003_003,p1,wrong_section,Shahi Ratna,Shahi Ratna
+batch_003_003,p1,wrong_price,Shahi Ratna,Shahi Ratna
+batch_003_003,p1,wrong_section,Mello Gellow,Mello Gellow
+batch_003_003,p1,wrong_price,Mello Gellow,Mello Gellow
+batch_003_003,p1,wrong_section,Fruit Overload,Fruit Overload
+batch_003_003,p1,wrong_price,Fruit Overload,Fruit Overload
+batch_003_003,p1,wrong_price,Golden Vanilla,Golden Vanilla
+batch_003_003,p1,wrong_section,Sitafal,Sitafal
+batch_003_003,p1,wrong_price,Sitafal,Sitafal
+batch_003_003,p1,wrong_section,Alphonso Mango,Alphonso Mango
+batch_003_003,p1,wrong_price,Alphonso Mango,Alphonso Mango
+batch_003_003,p1,wrong_price,Strawberry,Strawberry
+batch_003_003,p1,wrong_section,Pineapple Supreme,Pineapple Supreme
+batch_003_003,p1,wrong_price,Pineapple Supreme,Pineapple Supreme
+batch_003_003,p1,wrong_section,Tender Coconut,Tender Coconut
+batch_003_003,p1,wrong_price,Tender Coconut,Tender Coconut
+batch_003_003,p1,wrong_price,Pista,Pista
+batch_003_003,p1,missed_gold_item,,Raj Bhog
+batch_004_001,p1,false_positive_item,cheese Cill,
+batch_004_001,p1,wrong_section,cheese Corn,Cheese Corn
+batch_004_001,p1,wrong_price,cheese Corn,Cheese Corn
+batch_004_001,p1,wrong_section,Spinach Corn,Spinach Corn
+batch_004_001,p1,wrong_price,Spinach Corn,Spinach Corn
+batch_004_001,p1,wrong_section,Cheese Macroni,Cheese Macroni
+batch_004_001,p1,wrong_price,Cheese Macroni,Cheese Macroni
+batch_004_001,p1,false_positive_item,cheese,
+batch_004_001,p1,false_positive_item,Panetr Tikka,
+batch_004_001,p1,false_positive_item,Overload Veggie,
+batch_004_001,p1,wrong_section,Veggie Italiano,Veggie Italiano
+batch_004_001,p1,wrong_section,Corny Chilly Garlic,Corny Chilly Garlic
+batch_004_001,p1,wrong_price,Corny Chilly Garlic,Corny Chilly Garlic
+batch_004_001,p1,wrong_section,Tandoori Mushroom,Tandoori Mushroom
+batch_004_001,p1,false_positive_item,Pizza Sandwich (CornfPaneer/Mushroom),
+batch_004_001,p1,false_positive_item,Melting Cheese,
+batch_004_001,p1,false_positive_item,Veggie Ifaliano,
+batch_004_001,p1,false_positive_item,Chatpala Paneer Tikka,
+batch_004_001,p1,missed_gold_item,,Cheese Gill
+batch_004_001,p1,missed_gold_item,,Cheese Paneer
+batch_004_001,p1,missed_gold_item,,Paneer Tikka
+batch_004_001,p1,missed_gold_item,,Cheese Overload Veggie
+batch_004_001,p1,missed_gold_item,,Mexican Tadka
+batch_004_001,p1,missed_gold_item,,Schezewan Paneer
+batch_004_001,p1,missed_gold_item,,Veg Kabab
+batch_004_001,p1,missed_gold_item,,Crispy Bite
+batch_004_001,p1,missed_gold_item,,Veggie Italiano
+batch_004_001,p1,missed_gold_item,,Veg Patties
+batch_004_001,p1,missed_gold_item,,Pizza Sandwich (Corn/Paneer/Mushroom)
+batch_004_001,p1,missed_gold_item,,Melting Cheese Pizza
+batch_004_001,p1,missed_gold_item,,Chatpata Paneer Tikka
+batch_004_003,p1,wrong_section,Paneer Butter Masala,Paneer Butter Masala
+batch_004_003,p1,wrong_price,Paneer Butter Masala,Paneer Butter Masala
+batch_004_003,p1,wrong_section,Laccha Paneer,Laccha Paneer
+batch_004_003,p1,wrong_price,Laccha Paneer,Laccha Paneer
+batch_004_003,p1,wrong_section,Paneer Peshwai,Paneer Peshwai
+batch_004_003,p1,wrong_price,Paneer Peshwai,Paneer Peshwai
+batch_004_003,p1,wrong_section,Kadhai Paneer,Kadhai Paneer
+batch_004_003,p1,wrong_price,Kadhai Paneer,Kadhai Paneer
+batch_004_003,p1,wrong_section,Saoji Paneer,Saoji Paneer
+batch_004_003,p1,wrong_price,Saoji Paneer,Saoji Paneer
+batch_004_003,p1,wrong_section,Paneer Pasanda,Paneer Pasanda
+batch_004_003,p1,wrong_price,Paneer Pasanda,Paneer Pasanda
+batch_004_005,p1,false_positive_item,Butter Chicken,
+batch_004_005,p1,false_positive_item,Buller Chicken,
+batch_004_005,p1,false_positive_item,Butter Chicken,
+batch_004_005,p1,false_positive_item,Veg Egg Curry_.,
+batch_004_005,p1,false_positive_item,Chicken Masala,
+batch_004_005,p1,false_positive_item,Laccha Paneer:_,
+batch_004_005,p1,false_positive_item,Chicken Tikka Masala,
+batch_004_005,p1,false_positive_item,Veg Handi;,
+batch_004_005,p1,false_positive_item,Chicken Curry,
+batch_004_005,p1,false_positive_item,Veg Kotta,
+batch_004_005,p1,false_positive_item,Chicken Cury H,
+batch_004_005,p1,false_positive_item,Veg,
+batch_004_005,p1,false_positive_item,Chicken,
+batch_004_005,p1,wrong_section,Saoji Chicken,Saoji Chicken
+batch_004_005,p1,false_positive_item,Laccha,
+batch_004_005,p1,false_positive_item,Paneer;,
+batch_004_005,p1,false_positive_item,Chicken Sagwala.,
+batch_004_005,p1,false_positive_item,Palak Paneer; _,
+batch_004_005,p1,false_positive_item,Chicken Rara Masala_,
+batch_004_005,p1,false_positive_item,Veg Keema,
+batch_004_005,p1,false_positive_item,Chicken Patiyala_,
+batch_004_005,p1,false_positive_item,Paneer Saoji _,
+batch_004_005,p1,false_positive_item,Mutton,
+batch_004_005,p1,false_positive_item,Masala,
+batch_004_005,p1,wrong_section,Mutton Rara Masala,Mutton Rara Masala
+batch_004_005,p1,false_positive_item,Fry;_,
+batch_004_005,p1,false_positive_item,Mutton,
+batch_004_005,p1,false_positive_item,Dal Khichdi;,
+batch_004_005,p1,false_positive_item,Mutton Rogan Juice,
+batch_004_005,p1,false_positive_item,Mutton Rogan Juicel;,
+batch_004_005,p1,false_positive_item,Mullon Rogan Juice,
+batch_004_005,p1,false_positive_item,Shezwan Fried Rice_,
+batch_004_005,p1,false_positive_item,Chicken,
+batch_004_005,p1,false_positive_item,Laccha,
+batch_004_005,p1,false_positive_item,Chicken Shezwan Fried Rice_,
+batch_004_005,p1,wrong_section,Bheja,Bheja
+batch_004_005,p1,wrong_price,Bheja,Bheja
+batch_004_005,p1,wrong_price,Veg Fried Rice,Veg Fried Rice
+batch_004_005,p1,false_positive_item,Keema,
+batch_004_005,p1,false_positive_item,Kaleji .,
+batch_004_005,p1,wrong_price,Tripple Shezwan,Tripple Shezwan
+batch_004_005,p1,wrong_section,Egg Bhurji,Egg Bhurji
+batch_004_005,p1,wrong_price,Egg Bhurji,Egg Bhurji
+batch_004_005,p1,false_positive_item,Veg Biryani,
+batch_004_005,p1,false_positive_item,Egg,
+batch_004_005,p1,false_positive_item,Veg Biryani,
+batch_004_005,p1,false_positive_item,Chicken,
+batch_004_005,p1,false_positive_item,Egg,
+batch_004_005,p1,false_positive_item,Curry,
+batch_004_005,p1,false_positive_item,Chicken Biryani,
+batch_004_005,p1,false_positive_item,Chicken,
+batch_004_005,p1,false_positive_item,Hand,
+batch_004_005,p1,false_positive_item,Chicken Biryani,
+batch_004_005,p1,false_positive_item,Chicken,
+batch_004_005,p1,false_positive_item,Hand,
+batch_004_005,p1,false_positive_item,Chicken,
+batch_004_005,p1,false_positive_item,Handi,
+batch_004_005,p1,false_positive_item,Mutton,
+batch_004_005,p1,false_positive_item,Khur Curry,
+batch_004_005,p1,false_positive_item,Garlic Rice,
+batch_004_005,p1,false_positive_item,Khur,
+batch_004_005,p1,false_positive_item,Garlic Rico,
+batch_004_005,p1,false_positive_item,Mutton,
+batch_004_005,p1,false_positive_item,Khur Cumy,
+batch_004_005,p1,false_positive_item,Steam,
+batch_004_005,p1,false_positive_item,Rice H,
+batch_004_005,p1,false_positive_item,Steam Rice,
+batch_004_005,p1,false_positive_item,Chicken,
+batch_004_005,p1,false_positive_item,Chicken,
+batch_004_005,p1,wrong_price,Chicken Panko Fry,Chicken Panko Fry
+batch_004_005,p1,false_positive_item,Chicken,
+batch_004_005,p1,false_positive_item,Chilli,
+batch_004_005,p1,false_positive_item,Chicken,
+batch_004_005,p1,false_positive_item,Chicken_,
+batch_004_005,p1,false_positive_item,Chicken,
+batch_004_005,p1,false_positive_item,Chicken,
+batch_004_005,p1,false_positive_item,Chicken,
+batch_004_005,p1,false_positive_item,Mutton,
+batch_004_005,p1,false_positive_item,Chicken Hot,
+batch_004_005,p1,false_positive_item,Garlic,
+batch_004_005,p1,false_positive_item,Chicken,
+batch_004_005,p1,false_positive_item,Mutton,
+batch_004_005,p1,false_positive_item,Chicken,
+batch_004_005,p1,false_positive_item,Chilli .,
+batch_004_005,p1,false_positive_item,Chicken,
+batch_004_005,p1,false_positive_item,Chicken,
+batch_004_005,p1,false_positive_item,Chicken,
+batch_004_005,p1,false_positive_item,Mutton,
+batch_004_005,p1,false_positive_item,Mutton,
+batch_004_005,p1,false_positive_item,Biryani_,
+batch_004_005,p1,false_positive_item,Chicken,
+batch_004_005,p1,wrong_section,Chicken Honey,Chicken Honey
+batch_004_005,p1,wrong_price,Chicken Honey,Chicken Honey
+batch_004_005,p1,false_positive_item,panko,
+batch_004_005,p1,false_positive_item,Chicken,
+batch_004_005,p1,wrong_price,Fry Papad,Fry Papad
+batch_004_005,p1,false_positive_item,Chicken;,
+batch_004_005,p1,false_positive_item,Papad,
+batch_004_005,p1,false_positive_item,Masala,
+batch_004_005,p1,false_positive_item,Papad,
+batch_004_005,p1,false_positive_item,Garlic,
+batch_004_005,p1,false_positive_item,Cold Drink _,
+batch_004_005,p1,false_positive_item,Curry,
+batch_004_005,p1,false_positive_item,Curry,
+batch_004_005,p1,missed_gold_item,,Butter Chicken P.
+batch_004_005,p1,missed_gold_item,,Butter Chicken H.
+batch_004_005,p1,missed_gold_item,,Butter Chicken F.
+batch_004_005,p1,missed_gold_item,,Chicken Masala P.
+batch_004_005,p1,missed_gold_item,,Chicken Tikka Masala P.
+batch_004_005,p1,missed_gold_item,,Chicken Curry P.
+batch_004_005,p1,missed_gold_item,,Chicken Curry H.
+batch_004_005,p1,missed_gold_item,,Chicken Curry F.
+batch_004_005,p1,missed_gold_item,,Chicken Sagwala
+batch_004_005,p1,missed_gold_item,,Chicken Rara Masala
+batch_004_005,p1,missed_gold_item,,Chicken Patiyala
+batch_004_005,p1,missed_gold_item,,Mutton Masala
+batch_004_005,p1,missed_gold_item,,Mutton Kolhapuri
+batch_004_005,p1,missed_gold_item,,Mutton Rogan Juice P.
+batch_004_005,p1,missed_gold_item,,Mutton Rogan Juice H.
+batch_004_005,p1,missed_gold_item,,Mutton Rogan Juice F.
+batch_004_005,p1,missed_gold_item,,Chicken Laccha
+batch_004_005,p1,missed_gold_item,,Keema Kaleji
+batch_004_005,p1,missed_gold_item,,Egg Curry
+batch_004_005,p1,missed_gold_item,,Chicken Egg Curry
+batch_004_005,p1,missed_gold_item,,Chicken Handi P.
+batch_004_005,p1,missed_gold_item,,Chicken Handi H.
+batch_004_005,p1,missed_gold_item,,Chicken Handi F.
+batch_004_005,p1,missed_gold_item,,Mutton Khur Curry P.
+batch_004_005,p1,missed_gold_item,,Mutton Khur Curry H.
+batch_004_005,p1,missed_gold_item,,Mutton Khur Curry F.
+batch_004_005,p1,missed_gold_item,,Veg Culipta
+batch_004_005,p1,missed_gold_item,,Chicken Culipta
+batch_004_005,p1,missed_gold_item,,Chicken Lajawab
+batch_004_005,p1,missed_gold_item,,Chicken Roast
+batch_004_005,p1,missed_gold_item,,Jungli Chicken
+batch_004_005,p1,missed_gold_item,,Chicken Tambala
+batch_004_005,p1,missed_gold_item,,Mutton Tambala
+batch_004_005,p1,missed_gold_item,,Mutton Chap
+batch_004_005,p1,missed_gold_item,,Mutton Varhadi
+batch_004_005,p1,missed_gold_item,,Chicken Varhadi
+batch_004_005,p1,missed_gold_item,,Bhuna Mutton P.
+batch_004_005,p1,missed_gold_item,,Mutton Biryani F.
+batch_004_005,p1,missed_gold_item,,Mutton Biryani
+batch_004_005,p1,missed_gold_item,,Roast Papad
+batch_004_005,p1,missed_gold_item,,Masala Papad
+batch_004_005,p1,missed_gold_item,,Cold Drink
+batch_004_005,p1,missed_gold_item,,Mineral Water
+batch_004_005,p1,missed_gold_item,,Veg Egg Curry
+batch_004_005,p1,missed_gold_item,,Laccha Paneer
+batch_004_005,p1,missed_gold_item,,Laccha Paneer
+batch_004_005,p1,missed_gold_item,,Veg Handi
+batch_004_005,p1,missed_gold_item,,Veg Kofta Curry
+batch_004_005,p1,missed_gold_item,,Mix Veg
+batch_004_005,p1,missed_gold_item,,Veg Kolhapuri
+batch_004_005,p1,missed_gold_item,,Palak Paneer
+batch_004_005,p1,missed_gold_item,,Veg Keema Kasturi
+batch_004_005,p1,missed_gold_item,,Paneer Saoji
+batch_004_005,p1,missed_gold_item,,Dal Tadka
+batch_004_005,p1,missed_gold_item,,Dal Fry
+batch_004_005,p1,missed_gold_item,,Dal Makhani
+batch_004_005,p1,missed_gold_item,,Dal Khichdi
+batch_004_005,p1,missed_gold_item,,Shezwan Fried Rice
+batch_004_005,p1,missed_gold_item,,Chicken Shezwan Fried Rice
+batch_004_005,p1,missed_gold_item,,Chicken Fried Rice
+batch_004_005,p1,missed_gold_item,,Veg Biryani H.
+batch_004_005,p1,missed_gold_item,,Veg Biryani F.
+batch_004_005,p1,missed_gold_item,,Chicken Biryani H.
+batch_004_005,p1,missed_gold_item,,Chicken Biryani F.
+batch_004_005,p1,missed_gold_item,,Jeera Rice H.
+batch_004_005,p1,missed_gold_item,,Jeera Rice F.
+batch_004_005,p1,missed_gold_item,,Garlic Rice H.
+batch_004_005,p1,missed_gold_item,,Garlic Rice F.
+batch_004_005,p1,missed_gold_item,,Steam Rice H.
+batch_004_005,p1,missed_gold_item,,Steam Rice F.
+batch_004_005,p1,missed_gold_item,,Chilli Chicken
+batch_004_005,p1,missed_gold_item,,Chicken Sizler
+batch_004_005,p1,missed_gold_item,,Chicken 65
+batch_004_005,p1,missed_gold_item,,Chicken Hot Garlic
+batch_004_005,p1,missed_gold_item,,Crispy Chicken
+batch_004_005,p1,missed_gold_item,,Chicken Mexican Chilli
+batch_004_005,p1,missed_gold_item,,Chicken Z.
+batch_004_005,p1,missed_gold_item,,Chicken Lolipop
+batch_004_005,p1,missed_gold_item,,Drums of Heaven's
+batch_004_005,p1,missed_gold_item,,Chicken Depodien
+batch_004_005,p1,missed_gold_item,,Panko Chicken
+batch_004_005,p1,missed_gold_item,,Daddy's Special Chicken
+batch_004_005,p1,missed_gold_item,,Chilly Mushroom
+batch_004_005,p1,missed_gold_item,,Garlic Mushroom
+batch_004_005,p1,missed_gold_item,,Black Paper Mushroom
+batch_004_005,p1,missed_gold_item,,Black Paper Chicken
+batch_004_013,p1,false_positive_item,Puran Poli,
+batch_004_013,p1,false_positive_item,pieces),
+batch_004_013,p1,false_positive_item,Puran Poli in,
+batch_004_013,p1,false_positive_item,Ghee (pieces),
+batch_004_013,p1,false_positive_item,Gulab Jamun (pieces_,
+batch_004_013,p1,false_positive_item,Khowa Roti in,
+batch_004_013,p1,false_positive_item,pieces),
+batch_004_013,p1,false_positive_item,Khowa Roti,
+batch_004_013,p1,false_positive_item,pieces),
+batch_004_013,p1,wrong_section,Special Kesar Kulfi Shake,Special Kesar Kulfi Shake
+batch_004_013,p1,wrong_price,Special Kesar Kulfi Shake,Special Kesar Kulfi Shake
+batch_004_013,p1,false_positive_item,Special Badom Kesar Shake,
+batch_004_013,p1,false_positive_item,Special,
+batch_004_013,p1,false_positive_item,Pan Shake,
+batch_004_013,p1,wrong_section,Chocolate Shake,Chocolate Shake
+batch_004_013,p1,wrong_price,Chocolate Shake,Chocolate Shake
+batch_004_013,p1,wrong_section,Oreo Chocolate Shake,Oreo Chocolate Shake
+batch_004_013,p1,wrong_price,Oreo Chocolate Shake,Oreo Chocolate Shake
+batch_004_013,p1,wrong_section,Butterscotch Shake,Butterscotch Shake
+batch_004_013,p1,wrong_price,Butterscotch Shake,Butterscotch Shake
+batch_004_013,p1,false_positive_item,Pineopple shake,
+batch_004_013,p1,wrong_section,Cold Coffee,Cold Coffee
+batch_004_013,p1,wrong_price,Cold Coffee,Cold Coffee
+batch_004_013,p1,wrong_section,Rose Milk,Rose Milk
+batch_004_013,p1,wrong_price,Rose Milk,Rose Milk
+batch_004_013,p1,wrong_section,leechi Shake,Leechi Shake
+batch_004_013,p1,wrong_price,leechi Shake,Leechi Shake
+batch_004_013,p1,missed_gold_item,,Zunka Bhakar Thali
+batch_004_013,p1,missed_gold_item,,Veg Thali
+batch_004_013,p1,missed_gold_item,,Special Veg Thali
+batch_004_013,p1,missed_gold_item,,Special Paneer Thali
+batch_004_013,p1,missed_gold_item,,Egg Curry Thali
+batch_004_013,p1,missed_gold_item,,Chicken Thali
+batch_004_013,p1,missed_gold_item,,Mutton Thali
+batch_004_013,p1,missed_gold_item,,Bisleri Mineral Water
+batch_004_013,p1,missed_gold_item,,Puran Poli (2 pieces)
+batch_004_013,p1,missed_gold_item,,Puran Poli in Desi Ghee (2 pieces)
+batch_004_013,p1,missed_gold_item,,Gulab Jamun (4 pieces)
+batch_004_013,p1,missed_gold_item,,Khowa Roti in Desi Ghee (2 pieces)
+batch_004_013,p1,missed_gold_item,,Khowa Roti (2 pieces)
+batch_004_013,p1,missed_gold_item,,Aate ka Haluwa (kankecha sheera)
+batch_004_013,p1,missed_gold_item,,Gaojar Ka Haluwa
+batch_004_013,p1,missed_gold_item,,Special Kaju Gulkand Shake
+batch_004_013,p1,missed_gold_item,,Special Anjeer Pista Shake
+batch_004_013,p1,missed_gold_item,,Special Badam Kesar Shake
+batch_004_013,p1,missed_gold_item,,Special Pan Shake
+batch_004_013,p1,missed_gold_item,,Born Vitta Chocolate Shake
+batch_004_013,p1,missed_gold_item,,Pineapple shake
+batch_004_013,p1,missed_gold_item,,Strawberry Shake
+batch_004_013,p1,missed_gold_item,,Mango Shake
+batch_004_021,p1,missed_gold_item,,Veg Biryani
+batch_004_021,p1,missed_gold_item,,Egg Biryani
+batch_004_021,p1,missed_gold_item,,Chicken Biryani
+batch_004_021,p1,missed_gold_item,,Chicken Biryani
+batch_004_021,p1,missed_gold_item,,Mutton Biryani
+batch_004_021,p1,missed_gold_item,,Mutton Biryani
+batch_004_021,p1,missed_gold_item,,Fish Biryani
+batch_004_021,p1,missed_gold_item,,Fish Biryani
+batch_004_021,p1,missed_gold_item,,Veg Thali
+batch_004_021,p1,missed_gold_item,,Veg Spl. Thali
+batch_004_021,p1,missed_gold_item,,Egg Thali
+batch_004_021,p1,missed_gold_item,,Mutton/Chicken/Fish Thali
+batch_004_021,p1,missed_gold_item,,Paneer Pakoda
+batch_004_021,p1,missed_gold_item,,Veg Pakoda
+batch_004_021,p1,missed_gold_item,,Paneer Tika
+batch_004_021,p1,missed_gold_item,,Finger Chips
+batch_004_021,p1,missed_gold_item,,Chana Roast
+batch_004_021,p1,missed_gold_item,,Green Pease Roast
+batch_004_021,p1,missed_gold_item,,Onion Pakoda
+batch_004_021,p1,missed_gold_item,,Chicken Pakoda
+batch_004_021,p1,missed_gold_item,,Egg Pakoda
+batch_004_021,p1,missed_gold_item,,Chilly Paneer
+batch_004_021,p1,missed_gold_item,,Crispy Veg
+batch_004_021,p1,missed_gold_item,,Veg Manchurian
+batch_004_021,p1,missed_gold_item,,Veg Noodles
+batch_004_021,p1,missed_gold_item,,Chicken Noodles
+batch_004_021,p1,missed_gold_item,,Chilly Chana
+batch_004_021,p1,missed_gold_item,,Veg Fried Rice
+batch_004_021,p1,missed_gold_item,,Schezwan Rice
+batch_004_021,p1,missed_gold_item,,Manchurian Rice
+batch_004_021,p1,missed_gold_item,,Triple Rice
+batch_004_021,p1,missed_gold_item,,Hakka Noodles
+batch_004_021,p1,missed_gold_item,,Chicken Fried Rice
+batch_004_021,p1,missed_gold_item,,Chicken Triple Rice
+batch_004_021,p1,missed_gold_item,,Tandoori Chicken
+batch_004_021,p1,missed_gold_item,,Chilly Chicken
+batch_004_021,p1,missed_gold_item,,Chicken Roast
+batch_004_021,p1,missed_gold_item,,Mutton Roast
+batch_004_021,p1,missed_gold_item,,Papad Roast
+batch_004_021,p1,missed_gold_item,,Papad Fry
+batch_004_021,p1,missed_gold_item,,Papad Masala
+batch_004_021,p1,missed_gold_item,,Dahi
+batch_004_021,p1,missed_gold_item,,Bundi Raita
+batch_004_021,p1,missed_gold_item,,Mix Veg Raita
+batch_004_021,p1,missed_gold_item,,Matha
+batch_004_021,p1,missed_gold_item,,Lassi
+batch_004_021,p1,missed_gold_item,,Cold Drinks
+batch_004_021,p1,missed_gold_item,,Cold Drinks
+batch_004_021,p1,missed_gold_item,,Mineral Water
+batch_004_021,p1,missed_gold_item,,Chicken Curry
+batch_004_021,p1,missed_gold_item,,Chicken Curry
+batch_004_021,p1,missed_gold_item,,Kadai Chicken
+batch_004_021,p1,missed_gold_item,,Kadai Chicken
+batch_004_021,p1,missed_gold_item,,Kadai Chicken
+batch_004_021,p1,missed_gold_item,,Kadai Chicken
+batch_004_021,p1,missed_gold_item,,Chicken Masala
+batch_004_021,p1,missed_gold_item,,Chicken Masala
+batch_004_021,p1,missed_gold_item,,Chicken 2 In 1
+batch_004_021,p1,missed_gold_item,,Chicken 2 In 1
+batch_004_021,p1,missed_gold_item,,Chicken Saoji
+batch_004_021,p1,missed_gold_item,,Chicken Saoji
+batch_004_021,p1,missed_gold_item,,Butter Chicken
+batch_004_021,p1,missed_gold_item,,Butter Chicken
+batch_004_021,p1,missed_gold_item,,Butter Chicken
+batch_004_021,p1,missed_gold_item,,Butter Chicken
+batch_004_021,p1,missed_gold_item,,Chicken Rogan Josh
+batch_004_021,p1,missed_gold_item,,Chicken Rogan Josh
+batch_004_021,p1,missed_gold_item,,Chicken Rogan Josh
+batch_004_021,p1,missed_gold_item,,Chicken Rogan Josh
+batch_004_021,p1,missed_gold_item,,Chicken Sagwala
+batch_004_021,p1,missed_gold_item,,Chicken Sagwala
+batch_004_021,p1,missed_gold_item,,Chicken Do Pyaza
+batch_004_021,p1,missed_gold_item,,Chicken Do Pyaza
+batch_004_021,p1,missed_gold_item,,Chicken Mughlai
+batch_004_021,p1,missed_gold_item,,Chicken Mughlai
+batch_004_021,p1,missed_gold_item,,Chicken Leaver
+batch_004_021,p1,missed_gold_item,,Butter Chicken Boneless
+batch_004_021,p1,missed_gold_item,,Butter Chicken Boneless
+batch_004_021,p1,missed_gold_item,,Chicken Handi
+batch_004_021,p1,missed_gold_item,,Chicken Handi
+batch_004_021,p1,missed_gold_item,,Mury Musala
+batch_004_021,p1,missed_gold_item,,Mury Musala
+batch_004_021,p1,missed_gold_item,,Dhaba Chicken
+batch_004_021,p1,missed_gold_item,,Dhaba Chicken
+batch_004_021,p1,missed_gold_item,,Saoji Chicken
+batch_004_021,p1,missed_gold_item,,Saoji Chicken
+batch_004_021,p1,missed_gold_item,,Fish Amritsari
+batch_004_021,p1,missed_gold_item,,Fish Amritsari
+batch_004_021,p1,missed_gold_item,,Fish Masala
+batch_004_021,p1,missed_gold_item,,Fish Masala
+batch_004_021,p1,missed_gold_item,,Fish Curry
+batch_004_021,p1,missed_gold_item,,Fish Curry
+batch_004_021,p1,missed_gold_item,,Fish Fry
+batch_004_021,p1,missed_gold_item,,Fish Fry
+batch_004_021,p1,missed_gold_item,,Fish Saoji
+batch_004_021,p1,missed_gold_item,,Fish Saoji
+batch_004_021,p1,missed_gold_item,,Khur Curry
+batch_004_021,p1,missed_gold_item,,Khur Curry
+batch_004_021,p1,missed_gold_item,,Mutton Curry
+batch_004_021,p1,missed_gold_item,,Mutton Curry
+batch_004_021,p1,missed_gold_item,,Mutton Masala
+batch_004_021,p1,missed_gold_item,,Mutton Masala
+batch_004_021,p1,missed_gold_item,,Mutton Masala
+batch_004_021,p1,missed_gold_item,,Mutton Masala
+batch_004_021,p1,missed_gold_item,,Mutton Mughlai
+batch_004_021,p1,missed_gold_item,,Mutton Mughlai
+batch_004_021,p1,missed_gold_item,,Mutton Sagwala
+batch_004_021,p1,missed_gold_item,,Mutton Sagwala
+batch_004_021,p1,missed_gold_item,,Mutton Fry
+batch_004_021,p1,missed_gold_item,,Mutton Fry
+batch_004_021,p1,missed_gold_item,,Mutton Rogan Josh
+batch_004_021,p1,missed_gold_item,,Mutton Rogan Josh
+batch_004_021,p1,missed_gold_item,,Mutton Bhuna
+batch_004_021,p1,missed_gold_item,,Mutton Bhuna
+batch_004_021,p1,missed_gold_item,,Keema Kaleji
+batch_004_021,p1,missed_gold_item,,Keema Kaleji
+batch_004_021,p1,missed_gold_item,,Mutton Saoji
+batch_004_021,p1,missed_gold_item,,Mutton Saoji
+batch_004_021,p1,missed_gold_item,,Mutton Grevy
+batch_004_021,p1,missed_gold_item,,Mutton Grevy
+batch_004_021,p1,missed_gold_item,,Bheja Fry
+batch_004_021,p1,missed_gold_item,,Bheja Curry
+batch_004_021,p1,missed_gold_item,,Mutton Handi Saoji
+batch_004_021,p1,missed_gold_item,,Mutton Handi Saoji
+batch_004_021,p1,missed_gold_item,,Mutton Punjabi
+batch_004_021,p1,missed_gold_item,,Mutton Punjabi
+batch_004_021,p1,missed_gold_item,,Mutton Handi
+batch_004_021,p1,missed_gold_item,,Mutton Handi
+batch_004_021,p1,missed_gold_item,,Egg Curry
+batch_004_021,p1,missed_gold_item,,Egg Curry
+batch_004_021,p1,missed_gold_item,,Egg Curry Saoji
+batch_004_021,p1,missed_gold_item,,Egg Curry Saoji
+batch_004_021,p1,missed_gold_item,,Egg Masala
+batch_004_021,p1,missed_gold_item,,Egg Masala
+batch_004_021,p1,missed_gold_item,,Egg Burchee Curry
+batch_004_021,p1,missed_gold_item,,Egg Burchee Curry
+batch_004_021,p1,missed_gold_item,,Egg Burchee
+batch_004_021,p1,missed_gold_item,,Omlet
+batch_004_021,p1,missed_gold_item,,Half Fry
+batch_004_021,p1,missed_gold_item,,Boil Egg
+batch_004_022,p1,false_positive_item,Chicken Masala(Piece),
+batch_004_022,p1,false_positive_item,Steamed Rice,
+batch_004_022,p1,false_positive_item,Chicken Kadai(Piece),
+batch_004_022,p1,false_positive_item,Jeera Rice,
+batch_004_022,p1,false_positive_item,Chicken Saoji(Piece),
+batch_004_022,p1,false_positive_item,Garlic Rice,
+batch_004_022,p1,false_positive_item,Cheese Corn Palak,
+batch_004_022,p1,false_positive_item,Onion Jeera Garlic Rice,
+batch_004_022,p1,false_positive_item,Mushroom Masala,
+batch_004_022,p1,false_positive_item,Mutton saoji (Piece),
+batch_004_022,p1,false_positive_item,Kashmiri Dum Aloo,
+batch_004_022,p1,false_positive_item,Bhuna,
+batch_004_022,p1,false_positive_item,Paneer Biryani,
+batch_004_022,p1,false_positive_item,Egg Bhurji,
+batch_004_022,p1,false_positive_item,Egg Masala (Eggs),
+batch_004_022,p1,false_positive_item,Kadai Veg,
+batch_004_022,p1,false_positive_item,Aloo Gobi Matar,
+batch_004_022,p1,false_positive_item,Papad Masala,
+batch_004_022,p1,false_positive_item,Paneer Masala,
+batch_004_022,p1,false_positive_item,Paneer Butter Masala,
+batch_004_022,p1,false_positive_item,Paneer Saoji,
+batch_004_022,p1,false_positive_item,Paneer Bhurji,
+batch_004_022,p1,false_positive_item,Paneer Kadai,
+batch_004_022,p1,false_positive_item,Paneer Matar,
+batch_004_022,p1,false_positive_item,Paneer Varhadi,
+batch_004_022,p1,missed_gold_item,,Veg cheese grill
+batch_004_022,p1,missed_gold_item,,Capsicum grill
+batch_004_022,p1,missed_gold_item,,Cheese delight
+batch_004_022,p1,missed_gold_item,,Veg meyo Cheese corn
+batch_004_022,p1,missed_gold_item,,chilly garlic
+batch_004_022,p1,missed_gold_item,,Schezwan
+batch_004_022,p1,missed_gold_item,,Maggi sandwich
+batch_004_022,p1,missed_gold_item,,Cheese Corn
+batch_004_022,p1,missed_gold_item,,Masala corn
+batch_004_022,p1,missed_gold_item,,Masala Corn
+batch_004_022,p1,missed_gold_item,,Schezwan corn
+batch_004_022,p1,missed_gold_item,,Paneer schezwan
+batch_004_022,p1,missed_gold_item,,Paneer corn
+batch_004_022,p1,missed_gold_item,,Tandoori paneer
+batch_004_022,p1,missed_gold_item,,Chocolate sand.
+batch_004_022,p1,missed_gold_item,,Chocolate dry-fruit
+batch_004_022,p1,missed_gold_item,,Veg cheese burger
+batch_004_022,p1,missed_gold_item,,Cheesy & meyo burger
+batch_004_022,p1,missed_gold_item,,Super cheese burger
+batch_004_022,p1,missed_gold_item,,Cheese corn burger
+batch_004_022,p1,missed_gold_item,,Hot & spicy Burger
+batch_004_022,p1,missed_gold_item,,Orange tonic
+batch_004_022,p1,missed_gold_item,,Alphonso mango tonic
+batch_004_022,p1,missed_gold_item,,Chocolate tonic
+batch_004_022,p1,missed_gold_item,,Kit kat tonic
+batch_004_022,p1,missed_gold_item,,Oreo tonic
+batch_004_022,p1,missed_gold_item,,Choco-chips tonic
+batch_004_022,p1,missed_gold_item,,Blueberry tonic
+batch_004_022,p1,missed_gold_item,,CAD-B tonic
+batch_004_022,p1,missed_gold_item,,Kesar badam tonic
+batch_004_022,p1,missed_gold_item,,Cocktail tonic
+batch_004_022,p1,missed_gold_item,,Oreo kit-kat tonic
+batch_004_022,p1,missed_gold_item,,Dry-fruit tonic
+batch_004_022,p1,missed_gold_item,,Nutella tonic
+batch_004_022,p1,missed_gold_item,,Brownie tonic
+batch_004_022,p1,missed_gold_item,,Vegetable's maggi
+batch_004_022,p1,missed_gold_item,,Masala maggi
+batch_004_022,p1,missed_gold_item,,Cheese Corn maggi
+batch_004_022,p1,missed_gold_item,,Paneer maggi
+batch_004_022,p1,missed_gold_item,,Paneer cheese maggi
+batch_004_022,p1,missed_gold_item,,Cheese maggi
+batch_004_022,p1,missed_gold_item,,Tandoori paneer maggi
+batch_004_022,p1,missed_gold_item,,Makhani maggi
+batch_004_022,p1,missed_gold_item,,Schezwan maggi
+batch_004_022,p1,missed_gold_item,,Corn maggi
+batch_004_022,p1,missed_gold_item,,Chilly garlic maggi
+batch_004_022,p1,missed_gold_item,,Nutella waffle
+batch_004_022,p1,missed_gold_item,,Dark chocolate waffle
+batch_004_022,p1,missed_gold_item,,White Chocolate waffle
+batch_004_022,p1,missed_gold_item,,Milk chocolate waffle
+batch_004_022,p1,missed_gold_item,,Dark and white chemistry
+batch_004_022,p1,missed_gold_item,,Crunchy kit-kat waffle
+batch_004_022,p1,missed_gold_item,,Crunchy oreo waffle
+batch_004_022,p1,missed_gold_item,,Dry-fruit waffle
+batch_004_022,p1,missed_gold_item,,Three layer waffle
+batch_004_022,p1,missed_gold_item,,Snicker waffle
+batch_004_022,p1,missed_gold_item,,Cad-B waffle
+batch_004_022,p1,missed_gold_item,,Nutella overload
+batch_004_022,p1,missed_gold_item,,French fries
+batch_004_022,p1,missed_gold_item,,Masala fries
+batch_004_022,p1,missed_gold_item,,Peri peri fries
+batch_004_022,p1,missed_gold_item,,Jalapeno deep fries
+batch_004_022,p1,missed_gold_item,,Cheese fries
+batch_004_022,p1,missed_gold_item,,Butter Corn
+batch_005_008,p1,false_positive_item,Veg Sandwich,
+batch_005_008,p1,wrong_price,Cold Drink,Cold Drink
+batch_005_008,p1,wrong_section,Veg Grill Sandwich,Veg Grill Sandwich
+batch_005_008,p1,wrong_price,Veg Grill Sandwich,Veg Grill Sandwich
+batch_005_008,p1,wrong_price,Mineral Water,Mineral Water
+batch_005_008,p1,wrong_section,Veg Cheese Grill,Veg Cheese Grill
+batch_005_008,p1,wrong_price,Veg Cheese Grill,Veg Cheese Grill
+batch_005_008,p1,wrong_section,Pizza Sandwich,Pizza Sandwich
+batch_005_008,p1,wrong_price,Pizza Sandwich,Pizza Sandwich
+batch_005_008,p1,wrong_section,Maxican,Maxican
+batch_005_008,p1,wrong_price,Maxican,Maxican
+batch_005_008,p1,wrong_section,Veg Burger,Veg Burger
+batch_005_008,p1,wrong_price,Veg Burger,Veg Burger
+batch_005_008,p1,wrong_section,Paneer Tikka Sandwich,Paneer Tikka Sandwich
+batch_005_008,p1,wrong_price,Paneer Tikka Sandwich,Paneer Tikka Sandwich
+batch_005_008,p1,wrong_section,Closlow Sandwich,Closlow Sandwich
+batch_005_008,p1,wrong_price,Closlow Sandwich,Closlow Sandwich
+batch_005_008,p1,wrong_price,French Fries,French Fries
+batch_005_008,p1,wrong_section,Corn Sandwich,Corn Sandwich
+batch_005_008,p1,wrong_price,Corn Sandwich,Corn Sandwich
+batch_005_008,p1,wrong_section,Schezwan Paneer Sandwich,Schezwan Paneer Sandwich
+batch_005_008,p1,wrong_price,Schezwan Paneer Sandwich,Schezwan Paneer Sandwich
+batch_005_008,p1,false_positive_item,Cold Drink,
+batch_005_008,p1,wrong_section,Mushroom Paneer Sandwich,Mushroom Paneer Sandwich
+batch_005_008,p1,wrong_price,Mushroom Paneer Sandwich,Mushroom Paneer Sandwich
+batch_005_008,p1,wrong_section,Bombay Sandwich,Bombay Sandwich
+batch_005_008,p1,wrong_price,Bombay Sandwich,Bombay Sandwich
+batch_005_008,p1,false_positive_item,Veg Pizza,
+batch_005_008,p1,false_positive_item,French,
+batch_005_008,p1,false_positive_item,Cold Drink,
+batch_005_008,p1,false_positive_item,Cheese Pizza,
+batch_005_008,p1,false_positive_item,Fried Rice,
+batch_005_008,p1,false_positive_item,Manchurian,
+batch_005_008,p1,wrong_price,Mexican Delight,Mexican Delight
+batch_005_008,p1,false_positive_item,Cold Drink,
+batch_005_008,p1,wrong_price,American Heart,American Heart
+batch_005_008,p1,wrong_price,Peri Feri Pizza,Peri Feri Pizza
+batch_005_008,p1,wrong_section,Chatpata Paneer Pizza,Chatpata Paneer Pizza
+batch_005_008,p1,wrong_price,Chatpata Paneer Pizza,Chatpata Paneer Pizza
+batch_005_008,p1,false_positive_item,Veg Burger,
+batch_005_008,p1,wrong_section,Hawaiian Hunt Pizza,Hawaiian Hunt Pizza
+batch_005_008,p1,wrong_price,Hawaiian Hunt Pizza,Hawaiian Hunt Pizza
+batch_005_008,p1,wrong_section,Veg Cheese Burger,Veg Cheese Burger
+batch_005_008,p1,wrong_price,Veg Cheese Burger,Veg Cheese Burger
+batch_005_008,p1,wrong_section,Foot Street Special Pizza,Foot Street Special Pizza
+batch_005_008,p1,wrong_price,Foot Street Special Pizza,Foot Street Special Pizza
+batch_005_008,p1,false_positive_item,Aloo Peti Burger,
+batch_005_008,p1,wrong_section,Tandoori Delight Pizza,Tandoori Delight Pizza
+batch_005_008,p1,wrong_price,Tandoori Delight Pizza,Tandoori Delight Pizza
+batch_005_008,p1,wrong_section,Smoky Paneer Burger,Smoky Paneer Burger
+batch_005_008,p1,wrong_price,Smoky Paneer Burger,Smoky Paneer Burger
+batch_005_008,p1,wrong_section,Lover Bite,Lover Bite
+batch_005_008,p1,wrong_price,Lover Bite,Lover Bite
+batch_005_008,p1,wrong_section,Schezwan Paneer Burger,Schezwan Paneer Burger
+batch_005_008,p1,wrong_price,Schezwan Paneer Burger,Schezwan Paneer Burger
+batch_005_008,p1,wrong_section,Jain Pizza,Jain Pizza
+batch_005_008,p1,wrong_price,Jain Pizza,Jain Pizza
+batch_005_008,p1,wrong_section,American Heart,American Heart
+batch_005_008,p1,wrong_price,American Heart,American Heart
+batch_005_008,p1,false_positive_item,French Fries,
+batch_005_008,p1,wrong_section,Cheese Corn Pizza,Cheese Corn Pizza
+batch_005_008,p1,wrong_price,Cheese Corn Pizza,Cheese Corn Pizza
+batch_005_008,p1,false_positive_item,Plain,
+batch_005_008,p1,missed_gold_item,,Veg Sandwich Plain
+batch_005_008,p1,missed_gold_item,,Veg Cheese Pizza
+batch_005_008,p1,missed_gold_item,,Veg Burger + French Fries + Cold Drink
+batch_005_008,p1,missed_gold_item,,Veg Pizza + French + Cold Drink
+batch_005_008,p1,missed_gold_item,,Fried Rice + Manchurian + Cold Drink
+batch_005_008,p1,missed_gold_item,,Aloo Pati Burger
+batch_006_005,p1,false_positive_item,Crispy Chicken,
+batch_006_005,p1,false_positive_item,Veg: Burger,
+batch_006_005,p1,false_positive_item,Crispy Chicken (Pieces),
+batch_006_005,p1,wrong_section,Cheese Burger,Cheese Burger
+batch_006_005,p1,wrong_price,Cheese Burger,Cheese Burger
+batch_006_005,p1,false_positive_item,Chicken (Pieces),
+batch_006_005,p1,wrong_section,Maxicon Burger,Maxicon Burger
+batch_006_005,p1,wrong_price,Maxicon Burger,Maxicon Burger
+batch_006_005,p1,false_positive_item,Mini Bucket (Pieces),
+batch_006_005,p1,wrong_section,Cheese Corn Burger,Cheese Corn Burger
+batch_006_005,p1,wrong_price,Cheese Corn Burger,Cheese Corn Burger
+batch_006_005,p1,false_positive_item,Large Bucket (Pieces),
+batch_006_005,p1,wrong_section,Paneer Burger,Paneer Burger
+batch_006_005,p1,wrong_price,Paneer Burger,Paneer Burger
+batch_006_005,p1,false_positive_item,Crispy Chicken Strips (Pieces),
+batch_006_005,p1,false_positive_item,Lolipop (Pieces),
+batch_006_005,p1,false_positive_item,Hot Wings (Pieces),
+batch_006_005,p1,wrong_section,French Fries,French Fries
+batch_006_005,p1,wrong_price,French Fries,French Fries
+batch_006_005,p1,false_positive_item,Hot,
+batch_006_005,p1,false_positive_item,(Pieces),
+batch_006_005,p1,wrong_section,Masala French Fries,Masala French Fries
+batch_006_005,p1,wrong_price,Masala French Fries,Masala French Fries
+batch_006_005,p1,false_positive_item,Chicken Popcorn (Pcs:),
+batch_006_005,p1,false_positive_item,Nuggets (Pcs ),
+batch_006_005,p1,false_positive_item,Chicken Fingers (Pcs ),
+batch_006_005,p1,false_positive_item,Chicken Nuggets (Pcs),
+batch_006_005,p1,false_positive_item,Chicken Cutlets (Pcs ),
+batch_006_005,p1,wrong_section,Chocolate Shake,Chocolate Shake
+batch_006_005,p1,false_positive_item,Combo,
+batch_006_005,p1,wrong_section,Butterscotch Milk Shake,Butterscotch Milk Shake
+batch_006_005,p1,wrong_price,Butterscotch Milk Shake,Butterscotch Milk Shake
+batch_006_005,p1,wrong_section,Mini Combos,Mini Combos
+batch_006_005,p1,wrong_description,Mini Combos,Mini Combos
+batch_006_005,p1,wrong_section,Butterscotch Thick Shake,Butterscotch Thick Shake
+batch_006_005,p1,false_positive_item,(Pcs Crispy Chicken+Pcs,
+batch_006_005,p1,wrong_section,Coco Chips Thick Shake,Coco Chips Thick Shake
+batch_006_005,p1,false_positive_item,Lolipop+Pcs. Crispy,
+batch_006_005,p1,wrong_section,Mango Shake,Mango Shake
+batch_006_005,p1,wrong_price,Mango Shake,Mango Shake
+batch_006_005,p1,false_positive_item,Hot Wings),
+batch_006_005,p1,wrong_section,Pineapple Shake,Pineapple Shake
+batch_006_005,p1,wrong_price,Pineapple Shake,Pineapple Shake
+batch_006_005,p1,wrong_section,Strawberry Shake,Strawberry Shake
+batch_006_005,p1,wrong_price,Strawberry Shake,Strawberry Shake
+batch_006_005,p1,wrong_section,Large Combo,Large Combo
+batch_006_005,p1,wrong_description,Large Combo,Large Combo
+batch_006_005,p1,false_positive_item,(Pcs Crispy Lolipop+Pcs_,
+batch_006_005,p1,false_positive_item,Crispy Hot Wings +Pcs,
+batch_006_005,p1,false_positive_item,Chicken+Chicken Pety,
+batch_006_005,p1,false_positive_item,Burger),
+batch_006_005,p1,false_positive_item,Chicken Pety,
+batch_006_005,p1,false_positive_item,Zinger Burger,
+batch_006_005,p1,false_positive_item,Royal Burger,
+batch_006_005,p1,wrong_section,Chicken Whopper Burger,Chicken Whopper Burger
+batch_006_005,p1,false_positive_item,Wings,
+batch_006_005,p1,false_positive_item,Burger,
+batch_006_005,p1,missed_gold_item,,Crispy Chicken (2 Pieces)
+batch_006_005,p1,missed_gold_item,,Crispy Chicken (4 Pieces)
+batch_006_005,p1,missed_gold_item,,Mini Bucket (8 Pieces)
+batch_006_005,p1,missed_gold_item,,Large Bucket (12 Pieces)
+batch_006_005,p1,missed_gold_item,,Crispy Chicken Strips (4 Pieces)
+batch_006_005,p1,missed_gold_item,,Crispy Lolipop (4 Pieces)
+batch_006_005,p1,missed_gold_item,,Hot Wings (4 Pieces)
+batch_006_005,p1,missed_gold_item,,Hot Wings (8 Pieces)
+batch_006_005,p1,missed_gold_item,,Chicken Popcorn (15 Pcs.)
+batch_006_005,p1,missed_gold_item,,Chicken Fingers (10 Pcs.)
+batch_006_005,p1,missed_gold_item,,Chicken Nuggets (8 Pcs)
+batch_006_005,p1,missed_gold_item,,Chicken Cutlets (4 Pcs.)
+batch_006_005,p1,missed_gold_item,,Chicken Pety Burger
+batch_006_005,p1,missed_gold_item,,Crispy Zinger Burger
+batch_006_005,p1,missed_gold_item,,Crispy Royal Burger
+batch_006_005,p1,missed_gold_item,,Veg. Nuggets (8 Pcs.)
+batch_006_005,p1,missed_gold_item,,Cold Coffee
+batch_006_010,p1,false_positive_item,Prawns Curry (po),
+batch_006_010,p1,wrong_price,Chicken Saoji Special,Chicken Saoji Special
+batch_006_010,p1,wrong_price,Egg Curry,Egg Curry
+batch_006_010,p1,wrong_price,Dum Aloo,Dum Aloo
+batch_006_010,p1,wrong_price,Chicken Kolhapuri,Chicken Kolhapuri
+batch_006_010,p1,false_positive_item,Vog Kolhapuri,
+batch_006_010,p1,false_positive_item,Saoll Patodl Curry,
+batch_006_010,p1,wrong_price,Baigan Bharta,Baigan Bharta
+batch_006_010,p1,false_positive_item,Masala Balgan,
+batch_006_010,p1,wrong_price,Chicken Handi,Chicken Handi
+batch_006_010,p1,wrong_description,Chicken Handi,Chicken Handi
+batch_006_010,p1,false_positive_item,Gobl Aloo,
+batch_006_010,p1,false_positive_item,Chicken Desi Half,
+batch_006_010,p1,wrong_price,Tandoori Chicken,Tandoori Chicken
+batch_006_010,p1,wrong_description,Tandoori Chicken,Tandoori Chicken
+batch_006_010,p1,false_positive_item,Paneer Saojl Spoclal,
+batch_006_010,p1,false_positive_item,Paneor Buttor Masala,
+batch_006_010,p1,false_positive_item,Mutton Cuny,
+batch_006_010,p1,wrong_section,Paneer Kolhapuri,Paneer Kolhapuri
+batch_006_010,p1,wrong_section,Paneer Bhurji Curry,Paneer Bhurji Curry
+batch_006_010,p1,wrong_price,Paneer Bhurji Curry,Paneer Bhurji Curry
+batch_006_010,p1,wrong_section,Paneer Chatpata,Paneer Chatpata
+batch_006_010,p1,false_positive_item,Kheema Kaleji Cuny,
+batch_006_010,p1,wrong_section,Kheema Kaleji Roast,Kheema Kaleji Roast
+batch_006_010,p1,false_positive_item,Curry (Ps),
+batch_006_010,p1,wrong_price,Dal Fry,Dal Fry
+batch_006_010,p1,wrong_price,Dal Tadka,Dal Tadka
+batch_006_010,p1,false_positive_item,Khur Bhuna (Ps),
+batch_006_010,p1,false_positive_item,Dal Buttor,
+batch_006_010,p1,false_positive_item,Fish Curry (p),
+batch_006_010,p1,false_positive_item,Dal Khlchdl,
+batch_006_010,p1,false_positive_item,Fish Fry (ps),
+batch_006_010,p1,missed_gold_item,,Chicken Handi
+batch_006_010,p1,missed_gold_item,,Chicken Desi
+batch_006_010,p1,missed_gold_item,,Chicken Desi
+batch_006_010,p1,missed_gold_item,,Tandoori Chicken
+batch_006_010,p1,missed_gold_item,,Mutton Curry
+batch_006_010,p1,missed_gold_item,,Mutton Handi
+batch_006_010,p1,missed_gold_item,,Mutton Handi
+batch_006_010,p1,missed_gold_item,,Kheema Kaleji Curry
+batch_006_010,p1,missed_gold_item,,Khur Curry (5 Ps)
+batch_006_010,p1,missed_gold_item,,Khur Bhuna (5 Ps)
+batch_006_010,p1,missed_gold_item,,Fish Curry (4ps)
+batch_006_010,p1,missed_gold_item,,Fish Fry (4ps)
+batch_006_010,p1,missed_gold_item,,Prawns Curry (3ps)
+batch_006_010,p1,missed_gold_item,,Prawns Rost (3ps)
+batch_006_010,p1,missed_gold_item,,Sauji Special Mix Veg
+batch_006_010,p1,missed_gold_item,,Veg Kolhapuri
+batch_006_010,p1,missed_gold_item,,Saoji Patodi Curry
+batch_006_010,p1,missed_gold_item,,Masala Baigan
+batch_006_010,p1,missed_gold_item,,Shev Bhaji
+batch_006_010,p1,missed_gold_item,,Gobi Aloo
+batch_006_010,p1,missed_gold_item,,Gobi Mutter
+batch_006_010,p1,missed_gold_item,,Paneer Saoji Special
+batch_006_010,p1,missed_gold_item,,Paneer Kadai
+batch_006_010,p1,missed_gold_item,,Paneer Butter Masala
+batch_006_010,p1,missed_gold_item,,Paneer Masala
+batch_006_010,p1,missed_gold_item,,Paneer Varadi
+batch_006_010,p1,missed_gold_item,,Paneer Mutter
+batch_006_010,p1,missed_gold_item,,Dal Butter
+batch_006_010,p1,missed_gold_item,,Dal Khichdi
+batch_006_014,p1,false_positive_item,Aloo Gobi,
+batch_006_014,p1,false_positive_item,Aloo Palak,
+batch_006_014,p1,false_positive_item,Dal Fry,
+batch_006_014,p1,false_positive_item,Aloo Mutler,
+batch_006_014,p1,false_positive_item,Jeera Dal,
+batch_006_014,p1,false_positive_item,Aloo Chola,
+batch_006_014,p1,false_positive_item,Dal Tadka,
+batch_006_014,p1,false_positive_item,Aloo Cury,
+batch_006_014,p1,false_positive_item,Dal Kolhapuri,
+batch_006_014,p1,false_positive_item,Jeera Aloo,
+batch_006_014,p1,false_positive_item,Dal Makhani,
+batch_006_014,p1,false_positive_item,Gobi Masala,
+batch_006_014,p1,false_positive_item,Dal Butter Fry,
+batch_006_014,p1,false_positive_item,Began Bharta,
+batch_006_014,p1,false_positive_item,Dal Mili Juli,
+batch_006_014,p1,false_positive_item,Began Bharla,
+batch_006_014,p1,false_positive_item,Tadka,
+batch_006_014,p1,false_positive_item,Tamater Chutney,
+batch_006_014,p1,false_positive_item,Sev Tamater,
+batch_006_014,p1,false_positive_item,Palak Paneer,
+batch_006_014,p1,false_positive_item,Tawa Roti,
+batch_006_014,p1,false_positive_item,Mutler Paneer,
+batch_006_014,p1,false_positive_item,Mix Veg,
+batch_006_014,p1,false_positive_item,Tandoori Roti,
+batch_006_014,p1,false_positive_item,Gobi Korma,
+batch_006_014,p1,false_positive_item,Fuli Roti,
+batch_006_014,p1,false_positive_item,Veg Kolhapuri,
+batch_006_014,p1,false_positive_item,Butter Roti,
+batch_006_014,p1,false_positive_item,Paneer Butler Masala,
+batch_006_014,p1,false_positive_item,Rumali Roti,
+batch_006_014,p1,false_positive_item,Shahi Paneer,
+batch_006_014,p1,false_positive_item,Paneer Korma,
+batch_006_014,p1,false_positive_item,Naan,
+batch_006_014,p1,false_positive_item,Paneer Saoji,
+batch_006_014,p1,false_positive_item,Butter Naan,
+batch_006_014,p1,false_positive_item,Paneer Burchi,
+batch_006_014,p1,false_positive_item,Garlic Naan,
+batch_006_014,p1,false_positive_item,Mix Veg Korma,
+batch_006_014,p1,false_positive_item,Sindhi Paratha,
+batch_006_014,p1,false_positive_item,Aloo Dum,
+batch_006_014,p1,false_positive_item,Butter Paratha,
+batch_006_014,p1,false_positive_item,Aloo Paratha,
+batch_006_014,p1,false_positive_item,Kaju Curry,
+batch_006_014,p1,false_positive_item,Paneer Paratha,
+batch_006_014,p1,false_positive_item,Tandoori Paratha,
+batch_006_014,p1,false_positive_item,Kadal Paneer,
+batch_006_014,p1,false_positive_item,Paneer Wadadi,
+batch_006_014,p1,false_positive_item,Paneer Kolhapur,
+batch_006_014,p1,false_positive_item,Paneer Masala,
+batch_006_014,p1,false_positive_item,Plain Rice,
+batch_006_014,p1,false_positive_item,Paneer Tikka Masala,
+batch_006_014,p1,false_positive_item,Steam Rice,
+batch_006_014,p1,false_positive_item,Paneer Pasanda,
+batch_006_014,p1,false_positive_item,Jeera Rice,
+batch_006_014,p1,false_positive_item,Paneer Kofla,
+batch_006_014,p1,false_positive_item,Masala Rice,
+batch_006_014,p1,false_positive_item,Palak Kolla,
+batch_006_014,p1,false_positive_item,Biryani Rice,
+batch_006_014,p1,false_positive_item,Dal Khichadi,
+batch_006_014,p1,false_positive_item,Butter Dal,
+batch_006_014,p1,false_positive_item,Kaju Paneer,
+batch_006_014,p1,false_positive_item,Rani Palak,
+batch_006_014,p1,false_positive_item,Veg Pulao,
+batch_006_014,p1,false_positive_item,Bhindi Fry,
+batch_006_014,p1,false_positive_item,Grewy Rice,
+batch_006_014,p1,false_positive_item,Aloo Bartha,
+batch_006_014,p1,false_positive_item,Paneer Pulao,
+batch_006_014,p1,missed_gold_item,,Paneer Tikka
+batch_006_014,p1,missed_gold_item,,Tandoori Gobhi
+batch_006_014,p1,missed_gold_item,,Vegetable Sheekh Kebab
+batch_006_014,p1,missed_gold_item,,Tandoori Chicken (Full)
+batch_006_014,p1,missed_gold_item,,Tandoori Chicken (Half)
+batch_006_014,p1,missed_gold_item,,Chicken Tikka
+batch_006_014,p1,missed_gold_item,,Chicken Reshmi Kebab
+batch_006_014,p1,missed_gold_item,,Chicken Malai Kebab
+batch_006_014,p1,missed_gold_item,,Chicken Tangri Kebab
+batch_006_014,p1,missed_gold_item,,Fish Tikka
+batch_006_014,p1,missed_gold_item,,Tandoori Prawns
+batch_006_015,p1,false_positive_item,Punjobl Chicken,
+batch_006_015,p1,false_positive_item,chicken Rogan Josh,
+batch_006_015,p1,false_positive_item,Kadhai Chicken,
+batch_006_015,p1,false_positive_item,Handi Chickcn,
+batch_006_015,p1,false_positive_item,Dhaba Chicken,
+batch_006_015,p1,false_positive_item,Chicken Masals,
+batch_006_015,p1,false_positive_item,Charguthi Chicken,
+batch_006_015,p1,false_positive_item,chicken Sagwala,
+batch_006_015,p1,false_positive_item,Chicken Pelijala,
+batch_006_015,p1,false_positive_item,chicken Mughlai,
+batch_006_015,p1,false_positive_item,Chicken Lai,
+batch_006_015,p1,false_positive_item,Chicken,
+batch_006_015,p1,false_positive_item,Mutton Kona,
+batch_006_015,p1,false_positive_item,Mutton Do Pyaza,
+batch_006_015,p1,false_positive_item,Mutton Rogn Josh,
+batch_006_015,p1,false_positive_item,Mutton Khecma Maraka,
+batch_006_015,p1,false_positive_item,Mutton Handi,
+batch_006_015,p1,false_positive_item,Mutton Curry,
+batch_006_015,p1,false_positive_item,Fish,
+batch_006_015,p1,false_positive_item,Fish Amrilcari (Swcet),
+batch_006_015,p1,false_positive_item,Fish Saoji,
+batch_006_015,p1,false_positive_item,Chicken Saoji Special,
+batch_006_015,p1,false_positive_item,Egg Saoji Special,
+batch_006_015,p1,missed_gold_item,,Veg. Mayonees Muglai
+batch_006_015,p1,missed_gold_item,,Egg Muglai
+batch_006_015,p1,missed_gold_item,,Egg Mayonees
+batch_006_015,p1,missed_gold_item,,Chicken Muglai
+batch_006_015,p1,missed_gold_item,,Chicken Mayonees Muglai
+batch_006_015,p1,missed_gold_item,,Egg Chicken Muglai
+batch_006_015,p1,missed_gold_item,,Egg Chicken Mayonees Muglai
+batch_006_015,p1,missed_gold_item,,Panner Muglai
+batch_006_015,p1,missed_gold_item,,Egg Cheese Muglai
+batch_006_015,p1,missed_gold_item,,Chicken Cheese Muglai
+batch_006_015,p1,missed_gold_item,,Corn Cheese Muglai
+batch_006_015,p1,missed_gold_item,,Veg. Roll
+batch_006_015,p1,missed_gold_item,,Veg Mayonees Roll
+batch_006_015,p1,missed_gold_item,,Panner Roll
+batch_006_015,p1,missed_gold_item,,Panner Mayonees Roll
+batch_006_015,p1,missed_gold_item,,Double Egg Roll
+batch_006_015,p1,missed_gold_item,,Chicken Roll
+batch_006_015,p1,missed_gold_item,,Egg Chicken Roll
+batch_006_015,p1,missed_gold_item,,Chicken Mayonees Roll
+batch_006_015,p1,missed_gold_item,,Veg. Cutlet (4Pcs.)
+batch_006_015,p1,missed_gold_item,,Veg Momos
+batch_006_015,p1,missed_gold_item,,Corn Momos
+batch_006_015,p1,missed_gold_item,,Chicken momos
+batch_006_015,p1,missed_gold_item,,Kadal Paneer
+batch_006_015,p1,missed_gold_item,,Mutter Paneer
+batch_006_015,p1,missed_gold_item,,Paneer Butter Masala
+batch_006_015,p1,missed_gold_item,,Lasooni Paneer
+batch_006_015,p1,missed_gold_item,,Paneer Kolapuri
+batch_006_015,p1,missed_gold_item,,Saoji Paneer
+batch_006_015,p1,missed_gold_item,,Mix Veg
+batch_006_015,p1,missed_gold_item,,Veg Kolapuri
+batch_006_015,p1,missed_gold_item,,Bhuna Vegetables
+batch_006_015,p1,missed_gold_item,,Aloo Gobi
+batch_006_015,p1,missed_gold_item,,Jeera Aloo
+batch_006_015,p1,missed_gold_item,,Methi Mutter Malai
+batch_006_015,p1,missed_gold_item,,Lachha Panner
+batch_006_015,p1,missed_gold_item,,Chicken Curry
+batch_006_015,p1,missed_gold_item,,Chicken Masala
+batch_006_015,p1,missed_gold_item,,Kadal Chicken
+batch_006_015,p1,missed_gold_item,,Saoji Chicken
+batch_006_015,p1,missed_gold_item,,Lasooni Chicken
+batch_006_015,p1,missed_gold_item,,Chicken Kolapuri
+batch_006_015,p1,missed_gold_item,,Mutton Rogan Josh
+batch_006_015,p1,missed_gold_item,,Bhuna Mutton
+batch_006_015,p1,missed_gold_item,,Mutton Saoji
+batch_006_015,p1,missed_gold_item,,Egg Curry
+batch_006_015,p1,missed_gold_item,,Egg Masala
+batch_006_015,p1,missed_gold_item,,Egg Bhurji
+batch_006_015,p1,missed_gold_item,,Fish Curry (Rohu)
+batch_006_015,p1,missed_gold_item,,Veg Noodles
+batch_006_015,p1,missed_gold_item,,Chicken Noodles
+batch_006_015,p1,missed_gold_item,,Egg Noodles
+batch_006_015,p1,missed_gold_item,,Veg Fried Rice
+batch_006_015,p1,missed_gold_item,,Egg Fried Rice
+batch_006_015,p1,missed_gold_item,,Chicken Fried Rice
+batch_006_015,p1,missed_gold_item,,Egg Chicken Fried Rice
+batch_006_015,p1,missed_gold_item,,Chilly Panner (Dry/Gravy)
+batch_006_015,p1,missed_gold_item,,Chilly Chicken (B/L)
+batch_006_015,p1,missed_gold_item,,Chilly Chicken (W/Bone)
+batch_006_015,p1,missed_gold_item,,Chicken Biryani (Full)
+batch_006_015,p1,missed_gold_item,,Chicken Biryani (half)
+batch_006_015,p1,missed_gold_item,,Veg. Biryani
+batch_006_015,p1,missed_gold_item,,Veg. Pulav
+batch_006_015,p1,missed_gold_item,,Jeera Rice
+batch_006_015,p1,missed_gold_item,,Dal Khichdi
+batch_006_015,p1,missed_gold_item,,Dal Fry
+batch_006_015,p1,missed_gold_item,,Dal Tadka
+batch_006_015,p1,missed_gold_item,,Dal Kolapuri
+batch_006_015,p1,missed_gold_item,,Jeera But. Dal
+batch_006_015,p1,missed_gold_item,,Chapati
+batch_006_015,p1,missed_gold_item,,Butter Roti
+batch_006_018,p1,false_positive_item,BUTTER CHICKEN PIZZA ?,
+batch_006_018,p1,false_positive_item,?INDIANA PIZZA,
+batch_006_018,p1,missed_gold_item,,Cheese Corn
+batch_006_018,p1,missed_gold_item,,Bombay Grill
+batch_006_018,p1,missed_gold_item,,Paneer Makhani
+batch_006_018,p1,missed_gold_item,,Paneer Capsicum
+batch_006_018,p1,missed_gold_item,,Nutella
+batch_006_018,p1,missed_gold_item,,Schezwan Paneer
+batch_006_018,p1,missed_gold_item,,Cheesy Macaroni
+batch_006_018,p1,missed_gold_item,,Tandoori Paneer
+batch_006_018,p1,missed_gold_item,,Tandoori Corn
+batch_006_018,p1,missed_gold_item,,Makhani Corn
+batch_006_018,p1,missed_gold_item,,Spicy Corn
+batch_006_018,p1,missed_gold_item,,The Vintage Special
+batch_006_022,p1,false_positive_item,Mutton Rogan Josh,
+batch_006_022,p1,false_positive_item,Bhuno Mutton,
+batch_006_022,p1,false_positive_item,Mutton Saol,
+batch_006_022,p1,missed_gold_item,,Punjabi Chicken (Plate 2 pcs)
+batch_006_022,p1,missed_gold_item,,Punjabi Chicken (Half 4 pcs)
+batch_006_022,p1,missed_gold_item,,Punjabi Chicken (Full 8 pcs)
+batch_006_022,p1,missed_gold_item,,Chicken Rogan Josh (Plate 2 pcs)
+batch_006_022,p1,missed_gold_item,,Chicken Rogan Josh (Half 4 pcs)
+batch_006_022,p1,missed_gold_item,,Chicken Rogan Josh (Full 8 pcs)
+batch_006_022,p1,missed_gold_item,,Kadhai Chicken (Plate 2 pcs)
+batch_006_022,p1,missed_gold_item,,Kadhai Chicken (Half 4 pcs)
+batch_006_022,p1,missed_gold_item,,Kadhai Chicken (Full 8 pcs)
+batch_006_022,p1,missed_gold_item,,Handi Chicken (Plate 2 pcs)
+batch_006_022,p1,missed_gold_item,,Handi Chicken (Half 4 pcs)
+batch_006_022,p1,missed_gold_item,,Handi Chicken (Full 8 pcs)
+batch_006_022,p1,missed_gold_item,,Dhaba Chicken (Plate 2 pcs)
+batch_006_022,p1,missed_gold_item,,Dhaba Chicken (Half 4 pcs)
+batch_006_022,p1,missed_gold_item,,Dhaba Chicken (Full 8 pcs)
+batch_006_022,p1,missed_gold_item,,Chicken Kolhapuri (Plate 2 pcs)
+batch_006_022,p1,missed_gold_item,,Chicken Kolhapuri (Half 4 pcs)
+batch_006_022,p1,missed_gold_item,,Chicken Kolhapuri (Full 8 pcs)
+batch_006_022,p1,missed_gold_item,,Chicken Masala (Plate 2 pcs)
+batch_006_022,p1,missed_gold_item,,Chicken Masala (Half 4 pcs)
+batch_006_022,p1,missed_gold_item,,Chicken Masala (Full 8 pcs)
+batch_006_022,p1,missed_gold_item,,Ra RA Masala Chicken (Plate 2 pcs)
+batch_006_022,p1,missed_gold_item,,Ra RA Masala Chicken (Half 4 pcs)
+batch_006_022,p1,missed_gold_item,,Ra RA Masala Chicken (Full 8 pcs)
+batch_006_022,p1,missed_gold_item,,Gharguthi Chicken (Plate 2 pcs)
+batch_006_022,p1,missed_gold_item,,Gharguthi Chicken (Half 4 pcs)
+batch_006_022,p1,missed_gold_item,,Gharguthi Chicken (Full 8 pcs)
+batch_006_022,p1,missed_gold_item,,Chicken Sagwala (Plate 2 pcs)
+batch_006_022,p1,missed_gold_item,,Chicken Sagwala (Half 4 pcs)
+batch_006_022,p1,missed_gold_item,,Chicken Sagwala (Full 8 pcs)
+batch_006_022,p1,missed_gold_item,,Chicken Patiyala (Plate 2 pcs)
+batch_006_022,p1,missed_gold_item,,Chicken Patiyala (Half 4 pcs)
+batch_006_022,p1,missed_gold_item,,Chicken Patiyala (Full 8 pcs)
+batch_006_022,p1,missed_gold_item,,Chicken Mughlai (Plate 2 pcs)
+batch_006_022,p1,missed_gold_item,,Chicken Mughlai (Half 4 pcs)
+batch_006_022,p1,missed_gold_item,,Chicken Mughlai (Full 8 pcs)
+batch_006_022,p1,missed_gold_item,,Chicken Lal Maas (Plate 2 pcs)
+batch_006_022,p1,missed_gold_item,,Chicken Lal Maas (Half 4 pcs)
+batch_006_022,p1,missed_gold_item,,Chicken Lal Maas (Full 8 pcs)
+batch_006_022,p1,missed_gold_item,,Chicken Curry (Plate 2 pcs)
+batch_006_022,p1,missed_gold_item,,Chicken Curry (Half 4 pcs)
+batch_006_022,p1,missed_gold_item,,Chicken Curry (Full 8 pcs)
+batch_006_022,p1,missed_gold_item,,Mutton Korma (Plate 3 pcs)
+batch_006_022,p1,missed_gold_item,,Mutton Korma (Half 5 pcs)
+batch_006_022,p1,missed_gold_item,,Mutton Korma (Full 10 pcs)
+batch_006_022,p1,missed_gold_item,,Mutton Do Pyaza (Plate 3 pcs)
+batch_006_022,p1,missed_gold_item,,Mutton Do Pyaza (Half 5 pcs)
+batch_006_022,p1,missed_gold_item,,Mutton Do Pyaza (Full 10 pcs)
+batch_006_022,p1,missed_gold_item,,Mutton Rogn Josh (Plate 3 pcs)
+batch_006_022,p1,missed_gold_item,,Mutton Rogn Josh (Half 5 pcs)
+batch_006_022,p1,missed_gold_item,,Mutton Rogn Josh (Full 10 pcs)
+batch_006_022,p1,missed_gold_item,,Mutton RaRa Masala (Plate 3 pcs)
+batch_006_022,p1,missed_gold_item,,Mutton RaRa Masala (Half 5 pcs)
+batch_006_022,p1,missed_gold_item,,Mutton RaRa Masala (Full 10 pcs)
+batch_006_022,p1,missed_gold_item,,Mutton Kheema Masala (Plate 3 pcs)
+batch_006_022,p1,missed_gold_item,,Mutton Kheema Masala (Half 5 pcs)
+batch_006_022,p1,missed_gold_item,,Mutton Kheema Masala (Full 10 pcs)
+batch_006_022,p1,missed_gold_item,,Mutton Handi (Plate 3 pcs)
+batch_006_022,p1,missed_gold_item,,Mutton Handi (Half 5 pcs)
+batch_006_022,p1,missed_gold_item,,Mutton Handi (Full 10 pcs)
+batch_006_022,p1,missed_gold_item,,Mutton Kolhapuri (Plate 3 pcs)
+batch_006_022,p1,missed_gold_item,,Mutton Kolhapuri (Half 5 pcs)
+batch_006_022,p1,missed_gold_item,,Mutton Kolhapuri (Full 10 pcs)
+batch_006_022,p1,missed_gold_item,,Mutton Curry (Plate 3 pcs)
+batch_006_022,p1,missed_gold_item,,Mutton Curry (Half 5 pcs)
+batch_006_022,p1,missed_gold_item,,Mutton Curry (Full 10 pcs)
+batch_006_022,p1,missed_gold_item,,Fish Curry
+batch_006_022,p1,missed_gold_item,,Fish Amritsari (Sweet)
+batch_006_022,p1,missed_gold_item,,Fish Tikka Masala
+batch_006_022,p1,missed_gold_item,,Fish Saoji
+batch_006_022,p1,missed_gold_item,,Prawns Masala
+batch_006_022,p1,missed_gold_item,,Prawns Curry
+batch_006_022,p1,missed_gold_item,,Prawns Tikka Masala
+batch_006_022,p1,missed_gold_item,,Chicken Saoji Special (4pcs)
+batch_006_022,p1,missed_gold_item,,Mutton Saoji Special (4pcs)
+batch_006_022,p1,missed_gold_item,,Kheema Saoji Special
+batch_006_022,p1,missed_gold_item,,Egg Saoji Special
+batch_007_005,p1,missed_gold_item,,Greek Trio
+batch_007_005,p1,missed_gold_item,,Souvlaki Wrap & Side
+batch_007_005,p1,missed_gold_item,,Greek Plate
+batch_007_005,p1,missed_gold_item,,Vegan Plate
+batch_007_005,p1,missed_gold_item,,Vegan Souvlaki Wrap & Side
