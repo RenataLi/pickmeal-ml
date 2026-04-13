@@ -73,6 +73,7 @@ def _apply_filters(request: RecommendRequest, items: Iterable[ParsedItem]) -> li
     excluded_allergens = {x.lower() for x in request.excluded_allergens}
     disliked_terms = {x.lower() for x in request.disliked_terms}
     excluded_sections = {x.lower() for x in request.excluded_sections}
+    required_diet_flags = {x.lower() for x in request.required_diet_flags}
 
     kept: list[ParsedItem] = []
     for item in items:
@@ -88,6 +89,12 @@ def _apply_filters(request: RecommendRequest, items: Iterable[ParsedItem]) -> li
             continue
         if request.max_price is not None and item.price_value is not None and item.price_value > request.max_price:
             continue
+        if request.max_calories is not None and item.calories_mid is not None and item.calories_mid > request.max_calories:
+            continue
+        if required_diet_flags:
+            item_flags = {k.lower() for k, v in item.diet_flags.items() if v}
+            if not required_diet_flags.issubset(item_flags):
+                continue
         kept.append(item)
     return kept
 
@@ -114,6 +121,21 @@ def _rule_score(request: RecommendRequest, item: ParsedItem) -> tuple[float, lis
             score += 0.10
             reasons.append("within budget")
 
+    if request.max_calories is not None and item.calories_mid is not None:
+        if item.calories_mid <= request.max_calories:
+            score += 0.14
+            reasons.append("within calorie target")
+
+    if item.nutrition_confidence is not None:
+        score += 0.10 * float(item.nutrition_confidence)
+        reasons.append("nutrition estimate available")
+
+    if request.required_diet_flags:
+        matched_flags = [flag for flag in request.required_diet_flags if item.diet_flags.get(flag)]
+        if matched_flags:
+            score += 0.18
+            reasons.append("diet filter match")
+
     if request.liked_terms:
         item_text = _item_text(item).lower()
         matches = [term for term in request.liked_terms if term.lower() in item_text]
@@ -124,10 +146,22 @@ def _rule_score(request: RecommendRequest, item: ParsedItem) -> tuple[float, lis
     return score, reasons
 
 
-def recommend_items(request: RecommendRequest) -> tuple[str, list[RecommendationRow]]:
+def _match_label(score: float) -> str:
+    if score >= 0.68:
+        return "Strong match"
+    if score >= 0.40:
+        return "Good match"
+    return "Weak match"
+
+
+def _enabled_flags(item: ParsedItem) -> list[str]:
+    return [key for key, value in item.diet_flags.items() if value]
+
+
+def recommend_items(request: RecommendRequest) -> tuple[str, int, list[RecommendationRow]]:
     candidates = _apply_filters(request, request.items)
     if not candidates:
-        return "none", []
+        return "none", 0, []
 
     texts = [_item_text(item) for item in candidates]
     query_text = _query_text(request)
@@ -137,7 +171,7 @@ def recommend_items(request: RecommendRequest) -> tuple[str, list[Recommendation
     for idx, item in enumerate(candidates):
         rule_score, reasons = _rule_score(request, item)
         semantic_score = float(engine_result.scores[idx])
-        total_score = 0.70 * semantic_score + 0.30 * rule_score
+        total_score = 0.60 * semantic_score + 0.40 * rule_score
         rows.append(
             RecommendationRow(
                 rank=0,
@@ -145,6 +179,9 @@ def recommend_items(request: RecommendRequest) -> tuple[str, list[Recommendation
                 dish_name=item.dish_name,
                 section=item.section,
                 price_value=item.price_value,
+                calories_mid=item.calories_mid,
+                diet_flags=_enabled_flags(item),
+                match_label=_match_label(total_score),
                 score=round(total_score, 4),
                 semantic_score=round(semantic_score, 4),
                 rule_score=round(rule_score, 4),
@@ -159,4 +196,4 @@ def recommend_items(request: RecommendRequest) -> tuple[str, list[Recommendation
     for rank, row in enumerate(rows, start=1):
         row.rank = rank
 
-    return engine_result.engine_used, rows
+    return engine_result.engine_used, len(candidates), rows

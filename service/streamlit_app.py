@@ -515,6 +515,8 @@ def render_recommendation_cards(rec_df: pd.DataFrame):
     if rec_df.empty:
         st.warning("No dishes matched the current filters. Try relaxing allergens, disliked terms, or price limit.")
         return
+    if "match_label" in rec_df.columns and rec_df["match_label"].eq("Weak match").all():
+        st.warning("Only weak matches were found. Try relaxing the request or preferred section to get stronger recommendations.")
 
     for _, row in rec_df.iterrows():
         reasons = row.get("reasons", [])
@@ -524,6 +526,13 @@ def render_recommendation_cards(rec_df: pd.DataFrame):
         section = row.get("section") or "No section"
         price = row.get("price_value")
         price_text = f"Price: {price}" if pd.notna(price) else "Price: —"
+        calories = row.get("calories_mid")
+        calories_text = f"{int(calories)} kcal" if pd.notna(calories) else "kcal: —"
+        diet_flags = row.get("diet_flags", [])
+        if not isinstance(diet_flags, list):
+            diet_flags = []
+        diet_html = "".join(f"<span class='pm-soft-pill'>{flag}</span>" for flag in diet_flags[:4])
+        match_label = row.get("match_label") or "Match"
         st.markdown(
             f"""
             <div class='pm-reco-card'>
@@ -532,11 +541,12 @@ def render_recommendation_cards(rec_df: pd.DataFrame):
                         <div class='pm-rank'>{int(row.get('rank', 0))}</div>
                         <div>
                             <p class='pm-reco-name'>{row.get('dish_name', 'Unnamed dish')}</p>
-                            <div class='pm-reco-meta'>{section} · {price_text}</div>
+                            <div class='pm-reco-meta'>{section} · {price_text} · {calories_text}</div>
                         </div>
                     </div>
-                    <div class='pm-reco-score'>score {row.get('score', '—')}</div>
+                    <div class='pm-reco-score'>{match_label}</div>
                 </div>
+                <div class='pm-reco-reasons'>{diet_html}</div>
                 <div class='pm-reco-reasons'>{reasons_html}</div>
             </div>
             """,
@@ -564,37 +574,29 @@ def overlay_ocr_boxes(image: Image.Image, ocr_df: pd.DataFrame) -> Image.Image:
 def render_dashboard():
     st.subheader("Model dashboard")
 
-    parser_v2_valid = read_json_if_exists(PROJECT_ROOT / "reports" / "parser_baseline_v2" / "parser_metrics_valid.json") or {}
-    parser_v2_test = read_json_if_exists(PROJECT_ROOT / "reports" / "parser_baseline_v2" / "parser_metrics_test.json") or {}
-    parser_v3_layout_valid = read_json_if_exists(PROJECT_ROOT / "reports" / "parser_line_role_v3_layout" / "parser_metrics_valid.json") or {}
-    parser_v3_layout_test = read_json_if_exists(PROJECT_ROOT / "reports" / "parser_line_role_v3_layout" / "parser_metrics_test.json") or {}
-    parser_hybrid_valid = read_json_if_exists(PROJECT_ROOT / "reports" / "parser_hybrid_merge_v31" / "parser_metrics_valid.json") or {}
-    parser_hybrid_test = read_json_if_exists(PROJECT_ROOT / "reports" / "parser_hybrid_merge_v31" / "parser_metrics_test.json") or {}
-    line_role = read_json_if_exists(PROJECT_ROOT / "reports" / "line_role_baseline" / "line_role_metrics.json") or {}
+    parser_valid = read_json_if_exists(PROJECT_ROOT / "reports" / "parser_cascade_v1_expanded" / "parser_metrics_valid.json") or {}
+    parser_test = read_json_if_exists(PROJECT_ROOT / "reports" / "parser_cascade_v1_expanded" / "parser_metrics_test.json") or {}
+    line_role_baseline = read_json_if_exists(PROJECT_ROOT / "reports" / "line_role_baseline" / "line_role_metrics.json") or {}
+    line_role_expanded = read_json_if_exists(PROJECT_ROOT / "reports" / "line_role_expanded_sgd_v1" / "line_role_metrics.json") or {}
+    ocr_metrics = read_json_if_exists(PROJECT_ROOT / "reports" / "ocr_backend_benchmark_cascade_v1" / "ocr_backend_metrics.json") or []
+    ocr_df = pd.DataFrame(ocr_metrics)
+    paddle_row = ocr_df.loc[ocr_df["backend"] == "paddleocr"].iloc[0].to_dict() if not ocr_df.empty and (ocr_df["backend"] == "paddleocr").any() else {}
 
     c1, c2, c3, c4 = st.columns(4)
     with c1:
-        metric_card("Active parser test F1", f"{parser_v2_test.get('item_f1', '—')}", "Current stable service parser")
+        metric_card("Active parser test F1", f"{parser_test.get('item_f1', '—')}", "Current service parser on expanded test split")
     with c2:
-        metric_card("Hybrid parser test F1", f"{parser_hybrid_test.get('item_f1', '—')}", "Best offline report in repo")
+        metric_card("PaddleOCR item F1", f"{paddle_row.get('item_f1', '—')}", "End-to-end OCR plus parser benchmark")
     with c3:
-        metric_card("Line-role macro F1", f"{line_role.get('macro_f1', '—')}", "OCR line classifier")
+        metric_card("PaddleOCR price acc", f"{paddle_row.get('price_accuracy', '—')}", "Price extraction accuracy on benchmark pages")
     with c4:
-        metric_card("Parser gold menus", "39", "Current labeled parser set")
+        metric_card("Line-role macro F1", f"{line_role_expanded.get('macro_f1', '—')}", "Expanded OCR line classifier")
 
     rows = []
-    if parser_v2_valid:
-        rows.append({"model": "Parser v2", "split": "valid", **parser_v2_valid})
-    if parser_v2_test:
-        rows.append({"model": "Parser v2", "split": "test", **parser_v2_test})
-    if parser_v3_layout_valid:
-        rows.append({"model": "Parser v3 layout", "split": "valid", **parser_v3_layout_valid})
-    if parser_v3_layout_test:
-        rows.append({"model": "Parser v3 layout", "split": "test", **parser_v3_layout_test})
-    if parser_hybrid_valid:
-        rows.append({"model": "Parser hybrid v31", "split": "valid", **parser_hybrid_valid})
-    if parser_hybrid_test:
-        rows.append({"model": "Parser hybrid v31", "split": "test", **parser_hybrid_test})
+    if parser_valid:
+        rows.append({"model": "Cascade parser v1", "split": "valid", **parser_valid})
+    if parser_test:
+        rows.append({"model": "Cascade parser v1", "split": "test", **parser_test})
 
     if rows:
         comp_df = pd.DataFrame(rows)
@@ -618,11 +620,24 @@ def render_dashboard():
             st.markdown(f"**{metric}**")
             st.bar_chart(plot_df.set_index("label")[[metric]])
 
-    cm_path = PROJECT_ROOT / "reports" / "line_role_baseline" / "line_role_confusion_matrix.csv"
-    cm_df = read_csv_if_exists(cm_path)
-    if not cm_df.empty:
-        st.markdown("### Line-role confusion matrix")
-        show_dataframe(cm_df, height=260)
+    line_role_rows = []
+    if line_role_baseline:
+        line_role_rows.append({"model": "Line-role baseline", **line_role_baseline})
+    if line_role_expanded:
+        line_role_rows.append({"model": "Line-role expanded", **line_role_expanded})
+    if line_role_rows:
+        line_role_df = pd.DataFrame(line_role_rows)
+        cols = [c for c in ["model", "accuracy", "macro_f1", "weighted_f1", "n_train_rows", "n_test_rows"] if c in line_role_df.columns]
+        st.markdown("### Line-role model comparison")
+        show_dataframe(line_role_df[cols], height=180)
+
+    if not ocr_df.empty:
+        st.markdown("### OCR backend benchmark")
+        cols = [c for c in ["backend", "item_f1", "item_precision", "item_recall", "price_accuracy", "avg_ocr_lines", "avg_ocr_confidence"] if c in ocr_df.columns]
+        show_dataframe(ocr_df[cols], height=180)
+        chart_df = ocr_df[["backend", "item_f1", "price_accuracy"]].copy()
+        chart_df = chart_df.set_index("backend")
+        st.bar_chart(chart_df)
 
 
 def render_dataset_tab():
@@ -632,7 +647,17 @@ def render_dataset_tab():
     if summary:
         st.json(summary)
     else:
-        st.info("Dataset summary is not available yet.")
+        parser_valid = read_json_if_exists(PROJECT_ROOT / "reports" / "parser_cascade_v1_expanded" / "parser_metrics_valid.json") or {}
+        parser_test = read_json_if_exists(PROJECT_ROOT / "reports" / "parser_cascade_v1_expanded" / "parser_metrics_test.json") or {}
+        line_role = read_json_if_exists(PROJECT_ROOT / "reports" / "line_role_expanded_sgd_v1" / "line_role_metrics.json") or {}
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            metric_card("Parser valid menus", f"{parser_valid.get('n_menus', '—')}", "Expanded validation split")
+        with c2:
+            metric_card("Parser test menus", f"{parser_test.get('n_menus', '—')}", "Expanded held-out split")
+        with c3:
+            metric_card("Line-role test rows", f"{line_role.get('n_test_rows', '—')}", "Expanded OCR line evaluation set")
+        st.caption("Detailed dataset summary is not tracked in Git, so this tab falls back to committed benchmark artifacts.")
 
     rf_manifest = read_csv_if_exists(PROJECT_ROOT / "data" / "interim" / "roboflow_manifest.csv")
     kg_manifest = read_csv_if_exists(PROJECT_ROOT / "data" / "interim" / "kaggle_manifest.csv")
@@ -665,7 +690,8 @@ def render_how_it_works():
         2. OCR extracts text lines with coordinates.
         3. The parser builds menu items from names, descriptions, prices, and sections.
         4. The line-role model labels OCR rows as item, price, section, description, or noise.
-        5. The recommendation layer ranks only relevant dishes and can return no result when the page does not match the request.
+        5. A nutrition layer adds ingredient hints, allergen signals, diet flags, and calorie ranges.
+        6. The recommendation layer applies hard filters and then ranks relevant dishes for the user request.
         """
     )
 
@@ -683,7 +709,7 @@ st.markdown(
             <span class='pm-badge'>OCR + parser pipeline</span>
             <span class='pm-badge'>Rotatable image input</span>
             <span class='pm-badge'>Parser metrics and diagnostics</span>
-            <span class='pm-badge'>Recommendation baseline</span>
+            <span class='pm-badge'>Nutrition-aware recommendations</span>
         </div>
     </div>
     """,
@@ -781,7 +807,22 @@ with home_tab:
         main_col, side_col = st.columns([1.4, 1.0])
         with main_col:
             st.markdown("<p class='pm-section-title'>Parsed dishes</p>", unsafe_allow_html=True)
-            show_dataframe(items_df, height=360)
+            preview_cols = [
+                c
+                for c in [
+                    "dish_name",
+                    "section",
+                    "price_value",
+                    "calories_mid",
+                    "ingredient_hints",
+                    "explicit_allergens",
+                    "diet_flags",
+                    "parser_confidence",
+                    "nutrition_confidence",
+                ]
+                if c in items_df.columns
+            ]
+            show_dataframe(items_df[preview_cols] if preview_cols else items_df, height=360)
         with side_col:
             st.markdown("<p class='pm-section-title'>OCR lines</p>", unsafe_allow_html=True)
             show_dataframe(ocr_df[["line_order", "text", "ocr_confidence"]] if not ocr_df.empty else ocr_df, height=360)
@@ -796,8 +837,10 @@ with home_tab:
                 disliked_terms = st.text_input("Disliked terms (comma-separated)", value="fish")
             with pref_col2:
                 excluded_allergens = st.text_input("Excluded allergens (comma-separated)", value="peanut")
+                required_diet_flags = st.text_input("Required diet flags (comma-separated)", value="")
                 preferred_sections = st.text_input("Preferred menu sections (comma-separated)", value="pasta")
                 max_price = st.number_input("Max price", min_value=0.0, value=500.0)
+                max_calories = st.number_input("Max calories", min_value=0.0, value=700.0)
                 engine = st.selectbox("Recommendation engine", ["auto", "tfidf", "sentence_transformer"], index=0)
             recommend_clicked = st.form_submit_button("Recommend dishes")
 
@@ -808,8 +851,10 @@ with home_tab:
                 "liked_terms": [x.strip() for x in liked_terms.split(",") if x.strip()],
                 "disliked_terms": [x.strip() for x in disliked_terms.split(",") if x.strip()],
                 "excluded_allergens": [x.strip() for x in excluded_allergens.split(",") if x.strip()],
+                "required_diet_flags": [x.strip() for x in required_diet_flags.split(",") if x.strip()],
                 "preferred_sections": [x.strip() for x in preferred_sections.split(",") if x.strip()],
                 "max_price": max_price,
+                "max_calories": max_calories,
                 "top_k": 5,
                 "engine": engine,
             }
