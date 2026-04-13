@@ -7,7 +7,7 @@ from functools import lru_cache
 from typing import Iterable
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 
 from ..config import get_settings
 from ..schemas import OCRLine
@@ -20,6 +20,11 @@ PADDLE_LANG_ALIASES = {
     "ru": "ru",
     "rus": "ru",
     "russian": "ru",
+}
+
+PADDLE_REC_MODEL_NAMES = {
+    "en": "en_PP-OCRv5_mobile_rec",
+    "ru": "cyrillic_PP-OCRv5_mobile_rec",
 }
 
 
@@ -37,6 +42,7 @@ def _normalize_langs(langs_key: str | None) -> list[str]:
 
 
 def _with_line_order(rows: list[dict]) -> list[OCRLine]:
+    ordered_rows = _sort_rows_for_reading(rows)
     return [
         OCRLine(
             text=row["text"],
@@ -47,8 +53,35 @@ def _with_line_order(rows: list[dict]) -> list[OCRLine]:
             bbox_x2=row.get("bbox_x2"),
             bbox_y2=row.get("bbox_y2"),
         )
-        for idx, row in enumerate(rows, start=1)
+        for idx, row in enumerate(ordered_rows, start=1)
     ]
+
+
+def _cluster_key(value: float, tolerance: float) -> int:
+    if tolerance <= 0:
+        return 0
+    return int(round(value / tolerance))
+
+
+def _sort_rows_for_reading(rows: list[dict]) -> list[dict]:
+    if len(rows) <= 1:
+        return rows
+    if any(row.get("bbox_x1") is None or row.get("bbox_y1") is None for row in rows):
+        return rows
+
+    min_x = min(float(row["bbox_x1"]) for row in rows)
+    max_x = max(float(row.get("bbox_x2") or row["bbox_x1"]) for row in rows)
+    page_width = max(1.0, max_x - min_x)
+    tolerance = min(max(page_width * 0.18, 80.0), 260.0)
+
+    return sorted(
+        rows,
+        key=lambda row: (
+            _cluster_key(float(row["bbox_x1"]) - min_x, tolerance),
+            float(row["bbox_y1"]),
+            float(row["bbox_x1"]),
+        ),
+    )
 
 
 @lru_cache(maxsize=4)
@@ -82,6 +115,24 @@ def _configure_paddle_env():
     os.environ.setdefault("MODELSCOPE_CACHE", modelscope_cache_dir)
 
 
+def _load_image_array(image_bytes: bytes, max_side: int) -> np.ndarray:
+    image = Image.open(io.BytesIO(image_bytes))
+    image = ImageOps.exif_transpose(image).convert("RGB")
+    width, height = image.size
+    longest_side = max(width, height)
+    if longest_side > max_side:
+        scale = max_side / float(longest_side)
+        new_size = (max(1, int(round(width * scale))), max(1, int(round(height * scale))))
+        image = image.resize(new_size, Image.Resampling.LANCZOS)
+    return np.array(image)
+
+
+def _image_size(image_bytes: bytes) -> tuple[int, int]:
+    image = Image.open(io.BytesIO(image_bytes))
+    image = ImageOps.exif_transpose(image)
+    return image.size
+
+
 def _resolve_paddle_lang(langs_key: str) -> str:
     langs = _normalize_langs(langs_key)
     for lang in langs:
@@ -90,9 +141,49 @@ def _resolve_paddle_lang(langs_key: str) -> str:
     return "en"
 
 
+def _resolve_paddle_rec_model(langs_key: str) -> str:
+    return PADDLE_REC_MODEL_NAMES.get(_resolve_paddle_lang(langs_key), "en_PP-OCRv5_mobile_rec")
+
+
+def _paddle_model_dir(model_name: str) -> str:
+    settings = get_settings()
+    return os.path.join(settings.paddle_cache_dir, "official_models", model_name)
+
+
+def paddle_models_are_cached(langs_key: str) -> bool:
+    det_dir = _paddle_model_dir(get_settings().paddle_text_detection_model_name)
+    rec_dir = _paddle_model_dir(_resolve_paddle_rec_model(langs_key))
+    return os.path.isdir(det_dir) and os.path.isdir(rec_dir)
+
+
+def _accept_easy_result(lines: list[OCRLine], image_bytes: bytes) -> bool:
+    width, height = _image_size(image_bytes)
+    area = width * height
+    mean_conf = 0.0
+    confs = [float(line.ocr_confidence) for line in lines if line.ocr_confidence is not None]
+    if confs:
+        mean_conf = sum(confs) / len(confs)
+
+    if len(lines) >= 12 and mean_conf >= 0.55:
+        return True
+    if len(lines) >= 8 and mean_conf >= 0.68:
+        return True
+    if area >= 2_000_000 and len(lines) >= 8:
+        return True
+    return False
+
+
+def _prefer_easy_for_image(image_bytes: bytes) -> bool:
+    width, height = _image_size(image_bytes)
+    longest_side = max(width, height)
+    area = width * height
+    return longest_side > 2200 or area > 2_200_000
+
+
 @lru_cache(maxsize=4)
 def _build_paddleocr_reader(langs_key: str):
     _configure_paddle_env()
+    settings = get_settings()
     try:
         from paddleocr import PaddleOCR
     except Exception as exc:
@@ -101,10 +192,12 @@ def _build_paddleocr_reader(langs_key: str):
         ) from exc
 
     return PaddleOCR(
-        lang=_resolve_paddle_lang(langs_key),
+        text_detection_model_name=settings.paddle_text_detection_model_name,
+        text_recognition_model_name=_resolve_paddle_rec_model(langs_key),
         use_doc_orientation_classify=False,
         use_doc_unwarping=False,
         use_textline_orientation=False,
+        text_det_limit_side_len=settings.ocr_max_image_side,
     )
 
 
@@ -113,8 +206,7 @@ def run_easyocr(image_bytes: bytes, langs: str | None = None) -> list[OCRLine]:
     langs_key = langs or settings.default_ocr_langs
     reader = _build_reader(langs_key)
 
-    image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    image_array = np.array(image)
+    image_array = _load_image_array(image_bytes, settings.ocr_max_image_side)
     result = reader.readtext(image_array, detail=1, paragraph=False)
 
     rows: list[dict] = []
@@ -143,8 +235,7 @@ def run_paddleocr(image_bytes: bytes, langs: str | None = None) -> list[OCRLine]
     langs_key = langs or settings.default_ocr_langs
     reader = _build_paddleocr_reader(langs_key)
 
-    image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    image_array = np.array(image)
+    image_array = _load_image_array(image_bytes, settings.ocr_max_image_side)
     result = reader.predict(image_array)
     if not result:
         return []
@@ -202,6 +293,8 @@ def get_ocr_runtime_info() -> dict:
             "easyocr": ocr_backend_is_available("easyocr"),
         },
         "paddle_cache_dir": settings.paddle_cache_dir,
+        "paddle_detection_model": settings.paddle_text_detection_model_name,
+        "ocr_max_image_side": settings.ocr_max_image_side,
     }
 
 
@@ -213,6 +306,18 @@ def run_ocr(
     settings = get_settings()
     requested = (backend or settings.ocr_backend or "easyocr").strip().lower()
     fallback = (settings.ocr_fallback_backend or "").strip().lower()
+
+    if requested == "auto":
+        langs_key = langs or settings.default_ocr_langs
+        if _prefer_easy_for_image(image_bytes) or not paddle_models_are_cached(langs_key):
+            return OCRRunResult(backend="easyocr", lines=run_easyocr(image_bytes, langs=langs))
+        try:
+            return OCRRunResult(backend="paddleocr", lines=run_paddleocr(image_bytes, langs=langs))
+        except Exception:
+            easy_lines = run_easyocr(image_bytes, langs=langs)
+            if _accept_easy_result(easy_lines, image_bytes) or easy_lines:
+                return OCRRunResult(backend="easyocr", lines=easy_lines)
+            return OCRRunResult(backend="easyocr", lines=easy_lines)
 
     backends = [requested]
     if fallback and fallback not in backends:

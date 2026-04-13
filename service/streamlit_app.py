@@ -732,6 +732,7 @@ with home_tab:
         st.markdown("<p class='pm-section-title'>Prepare the menu image</p>", unsafe_allow_html=True)
         uploaded = st.file_uploader("Upload a menu image", type=["jpg", "jpeg", "png", "webp"])
         langs = st.text_input("OCR languages", value="en")
+        ocr_backend = st.selectbox("OCR backend", options=["auto", "paddleocr", "easyocr"], index=0)
         rotation_deg = st.selectbox("Rotate image", options=[0, 90, 180, 270], format_func=lambda x: f"{x}°", index=0)
         st.caption("Use rotation before parsing so the menu is upright for OCR and the parser.")
 
@@ -748,7 +749,7 @@ with home_tab:
             st.markdown("<p class='pm-section-title'>Preview</p>", unsafe_allow_html=True)
             show_image(rotated_preview, caption=f"Menu image ({rotation_deg}°)")
         prepared_upload_bytes, prepared_upload_mime = image_to_upload_bytes(rotated_preview, uploaded.name)
-        upload_signature = (uploaded.name, len(image_bytes), langs, rotation_deg)
+        upload_signature = (uploaded.name, len(image_bytes), langs, ocr_backend, rotation_deg)
 
         if st.session_state["parsed_signature"] is not None and st.session_state["parsed_signature"] != upload_signature:
             st.session_state["parsed_payload"] = None
@@ -770,7 +771,7 @@ with home_tab:
             st.warning("Please upload an image first.")
         else:
             files = {"file": (uploaded.name, prepared_upload_bytes, prepared_upload_mime or "image/png")}
-            data = {"langs": langs}
+            data = {"langs": langs, "backend": ocr_backend}
             try:
                 response = requests.post(f"{api_url}/parse/image", files=files, data=data, timeout=300)
                 if response.ok:

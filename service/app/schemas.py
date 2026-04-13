@@ -87,6 +87,8 @@ class OCRStatsResponse(BaseModel):
     fallback_backend: str | None = None
     available_backends: dict[str, bool] = Field(default_factory=dict)
     paddle_cache_dir: str | None = None
+    paddle_detection_model: str | None = None
+    ocr_max_image_side: int | None = None
 
 
 class RecommendRequest(BaseModel):

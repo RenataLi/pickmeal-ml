@@ -41,11 +41,12 @@ def parse_text(payload: ParseTextRequest) -> ParseResponse:
 async def parse_image(
     file: UploadFile = File(...),
     langs: str = Form(default="en"),
+    backend: str | None = Form(default=None),
 ) -> ParseResponse:
     settings = get_settings()
     try:
         content = await file.read()
-        ocr_result = run_ocr(content, langs=langs)
+        ocr_result = run_ocr(content, langs=langs, backend=backend)
         ocr_lines = ocr_result.lines
         items = enrich_items(parse_lines(ocr_lines))
         line_roles = predict_line_roles(ocr_lines)
