@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import combinations
 from typing import Iterable
 
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-from ..schemas import ParsedItem, RecommendRequest, RecommendationRow
+from ..schemas import CombinationRow, ParsedItem, RecommendRequest, RecommendationRow
 
 
 @dataclass
@@ -158,10 +159,110 @@ def _enabled_flags(item: ParsedItem) -> list[str]:
     return [key for key, value in item.diet_flags.items() if value]
 
 
-def recommend_items(request: RecommendRequest) -> tuple[str, int, list[RecommendationRow]]:
+def _combo_score(
+    request: RecommendRequest,
+    combo_items: list[ParsedItem],
+    item_scores: dict[str, float],
+) -> tuple[float, list[str], float | None, float | None]:
+    total_price = None
+    if all(item.price_value is not None for item in combo_items):
+        total_price = round(sum(float(item.price_value) for item in combo_items), 2)
+
+    total_calories = None
+    if all(item.calories_mid is not None for item in combo_items):
+        total_calories = round(sum(float(item.calories_mid) for item in combo_items), 1)
+
+    reasons: list[str] = []
+    score = float(np.mean([item_scores[item.local_id] for item in combo_items]))
+
+    sections = [item.section for item in combo_items if item.section]
+    if len(set(sections)) >= 2:
+        score += 0.06
+        reasons.append("section diversity")
+
+    if request.combo_budget is not None and total_price is not None and total_price <= request.combo_budget:
+        score += 0.12
+        reasons.append("within combo budget")
+        if request.combo_budget > 0:
+            budget_ratio = total_price / request.combo_budget
+            if 0.65 <= budget_ratio <= 1.0:
+                score += 0.05
+                reasons.append("good budget usage")
+
+    if request.combo_max_calories is not None and total_calories is not None and total_calories <= request.combo_max_calories:
+        score += 0.10
+        reasons.append("within combo calorie target")
+
+    if all(item.nutrition_confidence is not None for item in combo_items):
+        avg_conf = float(np.mean([float(item.nutrition_confidence) for item in combo_items]))
+        score += 0.05 * avg_conf
+        reasons.append("nutrition estimates available")
+
+    return score, reasons, total_price, total_calories
+
+
+def build_combo_rows(request: RecommendRequest, candidates: list[ParsedItem], item_rows: list[RecommendationRow]) -> list[CombinationRow]:
+    if request.combo_budget is None and request.combo_max_calories is None:
+        return []
+
+    min_items = max(2, int(request.combo_min_items))
+    max_items = max(min_items, int(request.combo_max_items))
+    ranked_items = sorted(candidates, key=lambda item: next((row.score for row in item_rows if row.local_id == item.local_id), 0.0), reverse=True)
+    pool = ranked_items[: min(len(ranked_items), 8)]
+    if len(pool) < min_items:
+        return []
+
+    item_scores = {row.local_id: row.score for row in item_rows}
+    combos: list[CombinationRow] = []
+    seen: set[tuple[str, ...]] = set()
+
+    for size in range(min_items, min(max_items, len(pool)) + 1):
+        for combo in combinations(pool, size):
+            key = tuple(sorted(item.local_id for item in combo))
+            if key in seen:
+                continue
+            seen.add(key)
+
+            if request.combo_budget is not None:
+                if any(item.price_value is None for item in combo):
+                    continue
+                total_price = sum(float(item.price_value) for item in combo)
+                if total_price > request.combo_budget:
+                    continue
+
+            if request.combo_max_calories is not None:
+                if any(item.calories_mid is None for item in combo):
+                    continue
+                total_calories = sum(float(item.calories_mid) for item in combo)
+                if total_calories > request.combo_max_calories:
+                    continue
+
+            score, reasons, total_price, total_calories = _combo_score(request, list(combo), item_scores)
+            combos.append(
+                CombinationRow(
+                    rank=0,
+                    item_ids=[item.local_id for item in combo],
+                    dish_names=[item.dish_name for item in combo],
+                    sections=[item.section for item in combo if item.section],
+                    total_price=total_price,
+                    total_calories=total_calories,
+                    score=round(score, 4),
+                    match_label=_match_label(score),
+                    reasons=reasons,
+                )
+            )
+
+    combos.sort(key=lambda row: row.score, reverse=True)
+    combos = combos[: max(1, request.top_k)]
+    for idx, row in enumerate(combos, start=1):
+        row.rank = idx
+    return combos
+
+
+def recommend_items(request: RecommendRequest) -> tuple[str, int, list[RecommendationRow], list[CombinationRow]]:
     candidates = _apply_filters(request, request.items)
     if not candidates:
-        return "none", 0, []
+        return "none", 0, [], []
 
     texts = [_item_text(item) for item in candidates]
     query_text = _query_text(request)
@@ -196,4 +297,6 @@ def recommend_items(request: RecommendRequest) -> tuple[str, int, list[Recommend
     for rank, row in enumerate(rows, start=1):
         row.rank = rank
 
-    return engine_result.engine_used, len(candidates), rows
+    combo_rows = build_combo_rows(request, candidates, rows)
+
+    return engine_result.engine_used, len(candidates), rows, combo_rows
