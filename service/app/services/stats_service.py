@@ -7,6 +7,7 @@ import pandas as pd
 
 from ..config import get_settings
 from .ocr_service import get_ocr_runtime_info
+from .storage_service import load_storage_stats as _load_storage_stats
 
 
 PARSER_REPORTS = [
@@ -87,3 +88,7 @@ def load_line_role_report() -> dict:
 
 def load_ocr_stats() -> dict:
     return get_ocr_runtime_info()
+
+
+def load_storage_stats() -> dict:
+    return _load_storage_stats()

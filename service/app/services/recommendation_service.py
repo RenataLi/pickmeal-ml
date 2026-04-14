@@ -39,12 +39,14 @@ def _try_sentence_transformer(texts: list[str], query_text: str) -> EngineResult
     except Exception:
         return None
 
-    # Small multilingual model is a good later option, but we avoid hard-coding downloads here.
-    model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-    matrix = model.encode(texts, normalize_embeddings=True)
-    query_vec = model.encode([query_text], normalize_embeddings=True)
-    scores = cosine_similarity(query_vec, matrix)[0]
-    return EngineResult(engine_used="sentence_transformer", scores=np.asarray(scores))
+    try:
+        model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2", local_files_only=True)
+        matrix = model.encode(texts, normalize_embeddings=True)
+        query_vec = model.encode([query_text], normalize_embeddings=True)
+        scores = cosine_similarity(query_vec, matrix)[0]
+        return EngineResult(engine_used="sentence_transformer", scores=np.asarray(scores))
+    except Exception:
+        return None
 
 
 def _tfidf_scores(texts: list[str], query_text: str) -> EngineResult:
