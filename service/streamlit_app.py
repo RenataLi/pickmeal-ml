@@ -762,9 +762,9 @@ st.markdown(
 
 with st.sidebar:
     st.header("Connection")
-    api_url = st.text_input("FastAPI URL", value=API_URL)
+    api_url = st.text_input("FastAPI URL", value=API_URL, key="api_url_input")
     st.caption("Run the API first, then open this app.")
-    show_developer_tools = st.checkbox("Developer mode", value=False)
+    show_developer_tools = st.checkbox("Developer mode", value=False, key="developer_mode_toggle")
 
 home_tab, diagnostics_tab, metrics_tab, data_tab = st.tabs(
     ["Live demo", "Parsing diagnostics", "Model metrics", "Dataset"]
@@ -774,10 +774,10 @@ with home_tab:
     control_col, preview_col = st.columns([0.88, 1.12])
     with control_col:
         st.markdown("<p class='pm-section-title'>Prepare the menu image</p>", unsafe_allow_html=True)
-        uploaded = st.file_uploader("Upload a menu image", type=["jpg", "jpeg", "png", "webp"])
-        langs = st.text_input("OCR languages", value="en")
-        ocr_backend = st.selectbox("OCR backend", options=["auto", "paddleocr", "easyocr"], index=0)
-        rotation_deg = st.selectbox("Rotate image", options=[0, 90, 180, 270], format_func=lambda x: f"{x}°", index=0)
+        uploaded = st.file_uploader("Upload a menu image", type=["jpg", "jpeg", "png", "webp"], key="menu_image_uploader")
+        langs = st.text_input("OCR languages", value="en", key="ocr_langs_input")
+        ocr_backend = st.selectbox("OCR backend", options=["auto", "paddleocr", "easyocr"], index=0, key="ocr_backend_select")
+        rotation_deg = st.selectbox("Rotate image", options=[0, 90, 180, 270], format_func=lambda x: f"{x}°", index=0, key="rotation_deg_select")
         st.caption("Use rotation before parsing so the menu is upright for OCR and the parser.")
 
     upload_signature = None
@@ -877,23 +877,23 @@ with home_tab:
         with st.form("recommend_form"):
             pref_col1, pref_col2 = st.columns(2)
             with pref_col1:
-                craving_text = st.text_input("What do you want right now?", value="creamy pasta with chicken")
-                liked_terms = st.text_input("Liked terms (comma-separated)", value="chicken, cheese")
-                disliked_terms = st.text_input("Disliked terms (comma-separated)", value="fish")
+                craving_text = st.text_input("What do you want right now?", value="creamy pasta with chicken", key="craving_text_input")
+                liked_terms = st.text_input("Liked terms (comma-separated)", value="chicken, cheese", key="liked_terms_input")
+                disliked_terms = st.text_input("Disliked terms (comma-separated)", value="fish", key="disliked_terms_input")
             with pref_col2:
-                excluded_allergens = st.text_input("Excluded allergens (comma-separated)", value="peanut")
-                required_diet_flags = st.text_input("Required diet flags (comma-separated)", value="")
-                preferred_sections = st.text_input("Preferred menu sections (comma-separated)", value="pasta")
-                max_price = st.number_input("Max dish price", min_value=0.0, value=500.0)
-                max_calories = st.number_input("Max calories", min_value=0.0, value=700.0)
-                engine = st.selectbox("Recommendation engine", ["auto", "tfidf", "sentence_transformer"], index=0)
+                excluded_allergens = st.text_input("Excluded allergens (comma-separated)", value="peanut", key="excluded_allergens_input")
+                required_diet_flags = st.text_input("Required diet flags (comma-separated)", value="", key="required_diet_flags_input")
+                preferred_sections = st.text_input("Preferred menu sections (comma-separated)", value="pasta", key="preferred_sections_input")
+                max_price = st.number_input("Max dish price", min_value=0.0, value=500.0, key="max_price_input")
+                max_calories = st.number_input("Max calories", min_value=0.0, value=700.0, key="max_calories_input")
+                engine = st.selectbox("Recommendation engine", ["auto", "tfidf", "sentence_transformer"], index=0, key="recommend_engine_select")
             combo_col1, combo_col2 = st.columns(2)
             with combo_col1:
-                combo_budget = st.number_input("Combination budget", min_value=0.0, value=0.0)
-                combo_min_items = st.selectbox("Min dishes in combo", options=[2, 3], index=0)
+                combo_budget = st.number_input("Combination budget", min_value=0.0, value=0.0, key="combo_budget_input")
+                combo_min_items = st.selectbox("Min dishes in combo", options=[2, 3], index=0, key="combo_min_items_select")
             with combo_col2:
-                combo_max_calories = st.number_input("Combination max calories", min_value=0.0, value=0.0)
-                combo_max_items = st.selectbox("Max dishes in combo", options=[2, 3], index=1)
+                combo_max_calories = st.number_input("Combination max calories", min_value=0.0, value=0.0, key="combo_max_calories_input")
+                combo_max_items = st.selectbox("Max dishes in combo", options=[2, 3], index=1, key="combo_max_items_select")
             recommend_clicked = st.form_submit_button("Recommend dishes")
 
         if recommend_clicked:

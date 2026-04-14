@@ -16,9 +16,9 @@ __pycache__/
 notebooks/
 models/
 references/
-data/
-!data/
+data/*
 !data/interim/
+data/interim/*
 !data/interim/dataset_summary.json
 
 reports/*

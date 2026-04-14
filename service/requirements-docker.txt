@@ -7,11 +7,6 @@ numpy>=1.24
 scikit-learn>=1.3
 Pillow>=10.0
 python-multipart>=0.0.9
-easyocr>=1.7
 paddleocr>=3.4
 paddlepaddle>=3.2,<3.3; platform_system == "Linux" and (platform_machine == "aarch64" or platform_machine == "arm64")
 paddlepaddle>=3.3; platform_system != "Linux" or (platform_machine != "aarch64" and platform_machine != "arm64")
-
-# Optional but useful
-# sentence-transformers>=3.0
-# qdrant-client>=1.9

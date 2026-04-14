@@ -306,18 +306,26 @@ def run_ocr(
     settings = get_settings()
     requested = (backend or settings.ocr_backend or "easyocr").strip().lower()
     fallback = (settings.ocr_fallback_backend or "").strip().lower()
+    easy_available = ocr_backend_is_available("easyocr")
+    paddle_available = ocr_backend_is_available("paddleocr")
 
     if requested == "auto":
         langs_key = langs or settings.default_ocr_langs
-        if _prefer_easy_for_image(image_bytes) or not paddle_models_are_cached(langs_key):
+        if easy_available and (_prefer_easy_for_image(image_bytes) or not paddle_available):
             return OCRRunResult(backend="easyocr", lines=run_easyocr(image_bytes, langs=langs))
-        try:
+        if paddle_available and paddle_models_are_cached(langs_key):
+            try:
+                return OCRRunResult(backend="paddleocr", lines=run_paddleocr(image_bytes, langs=langs))
+            except Exception:
+                if easy_available:
+                    easy_lines = run_easyocr(image_bytes, langs=langs)
+                    return OCRRunResult(backend="easyocr", lines=easy_lines)
+                raise
+        if easy_available:
+            return OCRRunResult(backend="easyocr", lines=run_easyocr(image_bytes, langs=langs))
+        if paddle_available:
             return OCRRunResult(backend="paddleocr", lines=run_paddleocr(image_bytes, langs=langs))
-        except Exception:
-            easy_lines = run_easyocr(image_bytes, langs=langs)
-            if _accept_easy_result(easy_lines, image_bytes) or easy_lines:
-                return OCRRunResult(backend="easyocr", lines=easy_lines)
-            return OCRRunResult(backend="easyocr", lines=easy_lines)
+        raise RuntimeError("No OCR backend is available in the current environment.")
 
     backends = [requested]
     if fallback and fallback not in backends:
