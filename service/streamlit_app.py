@@ -101,6 +101,19 @@ def read_csv_if_exists(path: Path) -> pd.DataFrame:
         return pd.DataFrame()
 
 
+def fetch_api_json(api_url: str, path: str, method: str = "GET", json_payload: dict | None = None, timeout: int = 30) -> dict | list | None:
+    try:
+        if method.upper() == "POST":
+            response = requests.post(f"{api_url}{path}", json=json_payload, timeout=timeout)
+        else:
+            response = requests.get(f"{api_url}{path}", timeout=timeout)
+        if response.ok:
+            return response.json()
+    except Exception:
+        return None
+    return None
+
+
 def inject_styles():
     st.markdown(
         """
@@ -615,7 +628,7 @@ def overlay_ocr_boxes(image: Image.Image, ocr_df: pd.DataFrame) -> Image.Image:
     return canvas
 
 
-def render_dashboard():
+def render_dashboard(api_url: str):
     st.subheader("Model dashboard")
 
     parser_valid = read_json_if_exists(PROJECT_ROOT / "reports" / "parser_cascade_v1_expanded" / "parser_metrics_valid.json") or {}
@@ -683,6 +696,32 @@ def render_dashboard():
         chart_df = chart_df.set_index("backend")
         st.bar_chart(chart_df)
 
+    storage_stats = fetch_api_json(api_url, "/stats/storage")
+    if isinstance(storage_stats, dict):
+        st.markdown("### Storage and embeddings")
+        s1, s2, s3, s4 = st.columns(4)
+        with s1:
+            metric_card("Storage enabled", "yes" if storage_stats.get("enabled") else "no", "Database-backed persistence")
+        with s2:
+            metric_card("Storage ready", "yes" if storage_stats.get("initialized") else "no", "Postgres + pgvector initialization")
+        with s3:
+            metric_card("Stored sessions", str(storage_stats.get("row_counts", {}).get("menu_sessions", "—")), "Persisted parse sessions")
+        with s4:
+            metric_card("Stored embeddings", str(storage_stats.get("row_counts", {}).get("dish_embeddings", "—")), "Vectors for parsed dishes")
+
+        stats_rows = pd.DataFrame(
+            [
+                {
+                    "database_url_present": storage_stats.get("database_url_present"),
+                    "embedding_model": storage_stats.get("embedding_model_name"),
+                    "embedding_dimensions": storage_stats.get("embedding_dimensions"),
+                    "recommendation_runs": storage_stats.get("row_counts", {}).get("recommendation_runs", 0),
+                    "last_error": storage_stats.get("last_error") or "",
+                }
+            ]
+        )
+        show_dataframe(stats_rows, height=120)
+
 
 def render_dataset_tab():
     st.subheader("Dataset overview")
@@ -738,6 +777,32 @@ def render_how_it_works():
         6. The recommendation layer applies hard filters, ranks relevant dishes, and can build feasible dish combinations under budget and calorie limits.
         """
     )
+
+
+def render_similar_dishes_lookup(api_url: str):
+    st.markdown("<p class='pm-section-title'>Similar dishes in storage</p>", unsafe_allow_html=True)
+    st.caption("Search across persisted dish embeddings stored in PostgreSQL with pgvector.")
+    with st.form("similar_dishes_form"):
+        query_text = st.text_input("Similarity query", value="margherita pizza", key="similarity_query_input")
+        top_k = st.slider("Top similar dishes", min_value=3, max_value=10, value=5, key="similarity_top_k_slider")
+        find_clicked = st.form_submit_button("Find similar dishes")
+
+    if find_clicked:
+        similar_payload = fetch_api_json(
+            api_url,
+            "/storage/similar",
+            method="POST",
+            json_payload={"query_text": query_text, "top_k": top_k},
+            timeout=60,
+        )
+        if isinstance(similar_payload, dict):
+            similar_df = pd.DataFrame(similar_payload.get("rows", []))
+            if similar_df.empty:
+                st.info("No stored dishes matched yet. Parse at least one menu first.")
+            else:
+                show_dataframe(similar_df, height=220)
+        else:
+            st.warning("Could not load similar dishes from the storage API.")
 
 
 st.set_page_config(page_title="PickMeal AI", layout="wide")
@@ -844,6 +909,8 @@ with home_tab:
         line_roles_df = pd.DataFrame(payload.get("line_roles", []))
 
         st.success(f"Parsed {len(items_df)} items from {len(ocr_df)} OCR lines")
+        if payload.get("session_id"):
+            st.caption(f"Stored session: {payload['session_id']}")
         render_status_chips(payload)
         render_summary_cards(payload, items_df, ocr_df, line_roles_df)
 
@@ -898,6 +965,7 @@ with home_tab:
 
         if recommend_clicked:
             rec_request = {
+                "session_id": payload.get("session_id"),
                 "items": payload["items"],
                 "craving_text": craving_text,
                 "liked_terms": [x.strip() for x in liked_terms.split(",") if x.strip()],
@@ -935,6 +1003,8 @@ with home_tab:
             st.error(recommend_error)
         if recommend_payload:
             st.info(f"Engine used: {recommend_payload.get('engine_used')}")
+            if recommend_payload.get("recommendation_id"):
+                st.caption(f"Stored recommendation run: {recommend_payload['recommendation_id']}")
             rec_df = pd.DataFrame(recommend_payload.get("rows", []))
             render_recommendation_cards(rec_df)
             combo_df = pd.DataFrame(recommend_payload.get("combo_rows", []))
@@ -945,6 +1015,8 @@ with home_tab:
             if not combo_df.empty:
                 with st.expander("Combination table"):
                     show_dataframe(combo_df, height=260)
+
+        render_similar_dishes_lookup(api_url)
 
         if show_developer_tools:
             st.markdown("### Raw response")
@@ -982,7 +1054,7 @@ with diagnostics_tab:
         show_dataframe(items_df, height=280)
 
 with metrics_tab:
-    render_dashboard()
+    render_dashboard(api_url)
 
 with data_tab:
     render_dataset_tab()

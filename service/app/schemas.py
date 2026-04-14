@@ -52,6 +52,7 @@ class ParseTextRequest(BaseModel):
 class ParseResponse(BaseModel):
     n_lines: int
     n_items: int
+    session_id: str | None = None
     ocr_backend: str | None = None
     parser_module: str | None = None
     line_role_model_loaded: bool = False
@@ -91,7 +92,18 @@ class OCRStatsResponse(BaseModel):
     ocr_max_image_side: int | None = None
 
 
+class StorageStatsResponse(BaseModel):
+    enabled: bool
+    initialized: bool
+    database_url_present: bool
+    embedding_model_name: str | None = None
+    embedding_dimensions: int | None = None
+    row_counts: dict[str, int] = Field(default_factory=dict)
+    last_error: str | None = None
+
+
 class RecommendRequest(BaseModel):
+    session_id: str | None = None
     items: list[ParsedItem]
     craving_text: str | None = None
     liked_terms: list[str] = Field(default_factory=list)
@@ -138,7 +150,25 @@ class CombinationRow(BaseModel):
 
 
 class RecommendResponse(BaseModel):
+    recommendation_id: str | None = None
     engine_used: str
     n_candidates: int
     rows: list[RecommendationRow] = Field(default_factory=list)
     combo_rows: list[CombinationRow] = Field(default_factory=list)
+
+
+class SimilarDishesRequest(BaseModel):
+    query_text: str
+    top_k: int = 5
+
+
+class SimilarDishRow(BaseModel):
+    session_id: str
+    local_id: str
+    dish_name: str
+    section: str | None = None
+    similarity: float
+
+
+class SimilarDishesResponse(BaseModel):
+    rows: list[SimilarDishRow] = Field(default_factory=list)

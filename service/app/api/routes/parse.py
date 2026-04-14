@@ -8,6 +8,7 @@ from ...services.enrichment_service import enrich_items
 from ...services.line_role_service import line_role_model_is_available, predict_line_roles
 from ...services.ocr_service import run_ocr
 from ...services.parser_service import get_parser_module_name, parse_lines
+from ...services.storage_service import persist_parse_result
 
 router = APIRouter(prefix="/parse", tags=["parse"])
 
@@ -25,9 +26,18 @@ def parse_text(payload: ParseTextRequest) -> ParseResponse:
 
     items = enrich_items(parse_lines(ocr_lines))
     line_roles = predict_line_roles(ocr_lines)
+    session_id = persist_parse_result(
+        source_kind="text_input",
+        ocr_backend="text_input",
+        parser_module=settings.parser_module or get_parser_module_name(),
+        ocr_lines=ocr_lines,
+        line_roles=line_roles,
+        items=items,
+    )
     return ParseResponse(
         n_lines=len(ocr_lines),
         n_items=len(items),
+        session_id=session_id,
         ocr_backend="text_input",
         parser_module=settings.parser_module or get_parser_module_name(),
         line_role_model_loaded=line_role_model_is_available(),
@@ -50,9 +60,18 @@ async def parse_image(
         ocr_lines = ocr_result.lines
         items = enrich_items(parse_lines(ocr_lines))
         line_roles = predict_line_roles(ocr_lines)
+        session_id = persist_parse_result(
+            source_kind="image_upload",
+            ocr_backend=ocr_result.backend,
+            parser_module=settings.parser_module or get_parser_module_name(),
+            ocr_lines=ocr_lines,
+            line_roles=line_roles,
+            items=items,
+        )
         return ParseResponse(
             n_lines=len(ocr_lines),
             n_items=len(items),
+            session_id=session_id,
             ocr_backend=ocr_result.backend,
             parser_module=settings.parser_module or get_parser_module_name(),
             line_role_model_loaded=line_role_model_is_available(),

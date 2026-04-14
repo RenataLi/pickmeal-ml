@@ -12,6 +12,9 @@ class Settings(BaseModel):
     project_root: Path
     api_title: str = "PickMeal Service"
     api_version: str = "0.1.0"
+    database_url: str | None = os.getenv("PICKMEAL_DATABASE_URL") or None
+    embedding_dimensions: int = int(os.getenv("PICKMEAL_EMBEDDING_DIMENSIONS", "256"))
+    embedding_model_name: str = os.getenv("PICKMEAL_EMBEDDING_MODEL", "hashing_v1")
     parser_module: str = os.getenv(
         "PICKMEAL_PARSER_MODULE",
         "pickmeal_ml.models.menu_structuring_cascade_v1",

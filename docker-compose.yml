@@ -1,4 +1,22 @@
 services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: pickmeal-postgres
+    environment:
+      POSTGRES_DB: ${PICKMEAL_POSTGRES_DB:-pickmeal}
+      POSTGRES_USER: ${PICKMEAL_POSTGRES_USER:-pickmeal}
+      POSTGRES_PASSWORD: ${PICKMEAL_POSTGRES_PASSWORD:-pickmeal}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pickmeal_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PICKMEAL_POSTGRES_USER:-pickmeal} -d ${PICKMEAL_POSTGRES_DB:-pickmeal}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
   api:
     build:
       context: .
@@ -13,11 +31,17 @@ services:
       PICKMEAL_PADDLE_DET_MODEL: ${PICKMEAL_PADDLE_DET_MODEL:-PP-OCRv5_server_det}
       PICKMEAL_OCR_MAX_IMAGE_SIDE: ${PICKMEAL_OCR_MAX_IMAGE_SIDE:-2560}
       PICKMEAL_DATASET_SUMMARY_PATH: ${PICKMEAL_DATASET_SUMMARY_PATH:-data/interim/dataset_summary.json}
+      PICKMEAL_DATABASE_URL: ${PICKMEAL_DATABASE_URL:-postgresql://pickmeal:pickmeal@postgres:5432/pickmeal}
+      PICKMEAL_EMBEDDING_DIMENSIONS: ${PICKMEAL_EMBEDDING_DIMENSIONS:-256}
+      PICKMEAL_EMBEDDING_MODEL: ${PICKMEAL_EMBEDDING_MODEL:-hashing_v1}
       PICKMEAL_PADDLE_CACHE_DIR: /app/.cache/paddlex_cache
       PICKMEAL_PADDLE_MPLCONFIGDIR: /app/.cache/matplotlib_cache
       PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK: "1"
     volumes:
       - pickmeal_cache:/app/.cache
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
   streamlit:
@@ -38,3 +62,4 @@ services:
 
 volumes:
   pickmeal_cache:
+  pickmeal_postgres_data:
