@@ -15,6 +15,12 @@ class Settings(BaseModel):
     database_url: str | None = os.getenv("PICKMEAL_DATABASE_URL") or None
     embedding_dimensions: int = int(os.getenv("PICKMEAL_EMBEDDING_DIMENSIONS", "256"))
     embedding_model_name: str = os.getenv("PICKMEAL_EMBEDDING_MODEL", "hashing_v1")
+    llm_enabled: bool = os.getenv("PICKMEAL_LLM_ENABLED", "false").strip().lower() in {"1", "true", "yes", "on"}
+    llm_base_url: str | None = os.getenv("PICKMEAL_LLM_BASE_URL") or None
+    llm_api_key: str | None = os.getenv("PICKMEAL_LLM_API_KEY") or None
+    llm_model: str | None = os.getenv("PICKMEAL_LLM_MODEL") or None
+    llm_timeout_seconds: int = int(os.getenv("PICKMEAL_LLM_TIMEOUT_SECONDS", "45"))
+    llm_max_items_per_request: int = int(os.getenv("PICKMEAL_LLM_MAX_ITEMS_PER_REQUEST", "6"))
     parser_module: str = os.getenv(
         "PICKMEAL_PARSER_MODULE",
         "pickmeal_ml.models.menu_structuring_cascade_v1",

@@ -1,133 +1,168 @@
 # pickmeal-ml
 
-PickMeal ML is the machine learning part of the PickMeal project.
+PickMeal is a dish recommendation service that starts from restaurant menu images and produces structured dishes, calorie and allergen hints, and recommendation results under user constraints.
 
-The goal of the project is to extract structured information from restaurant menu images and use it later for filtering, recommendation, and service development.
+This repository now contains both the ML pipeline and the backend demo stack:
+- OCR and menu parsing
+- gold dataset preparation and evaluation
+- FastAPI service
+- Streamlit product demo
+- PostgreSQL + pgvector storage layer
+- Docker packaging
 
-## Project goals
+## What the system does
 
-The ML pipeline focuses on these tasks:
+The current end-to-end flow is:
 
-1. detect and localize menu text regions;
-2. extract OCR text from menu pages;
-3. parse menu text into structured items;
-4. prepare menu items for recommendation and filtering;
-5. support future nutrition and allergen enrichment.
+1. a menu image is uploaded to the service;
+2. OCR extracts text lines with coordinates;
+3. a parser builds dish items from names, prices, sections, and descriptions;
+4. an enrichment layer adds ingredient hints, allergen signals, diet flags, and calorie ranges;
+5. a recommendation layer ranks dishes and builds budget-aware dish combinations;
+6. parsed results and embeddings can be stored in PostgreSQL with `pgvector` for later retrieval.
+
+## Current stack
+
+- `PaddleOCR` as the main OCR backend
+- `EasyOCR` as fallback / comparison baseline
+- line-role classifier based on `SGDClassifier`
+- cascade parser for structured menu item extraction
+- FastAPI for the API layer
+- Streamlit for the demo UI
+- PostgreSQL + `pgvector` for storage and similarity search
+- optional OpenAI-compatible LLM enrichment for human-friendly dish cards
+- Docker + `docker-compose` for local deployment
 
 ## Data sources
 
-### Main sources
-- **Roboflow Menu Text Box v3** - main annotated dataset for CV and layout tasks
-- **Kaggle Indian Restaurant Menu Card Images** - auxiliary raw-domain corpus for OCR checks and parser annotation
-- **USDA FoodData Central** - main nutrition knowledge base
-- **Open Food Facts** - additional source for normalization and weak supervision
+- **Roboflow Menu Text Box v3** for layout and detection data
+- **Kaggle Indian Restaurant Menu Card Images** as raw menu image corpus
+- **USDA FoodData Central** as a nutrition reference source
+- **Open Food Facts** as an auxiliary nutrition / ingredient source
 
-## Completed stages
+## Current dataset status
 
-## Stage 1 - Dataset audit and EDA
-At this stage, the repository was prepared and the available datasets were audited.
+The annotation and gold-building pipeline has already been expanded beyond the original small baseline:
 
-Completed work:
-- checked raw file structure;
-- created dataset manifests;
-- detected corrupted files;
-- detected empty or missing labels;
-- checked image sizes and basic quality;
-- inspected annotation quality and edge cases;
-- fixed the final role of each data source.
+- `126` menus
+- `4209` gold rows
+- `9740` OCR rows
 
-Main decision:
-- Roboflow is used as the main supervised dataset for CV/layout;
-- Kaggle menu pages are used as a raw-domain corpus for OCR and parser evaluation;
-- nutrition sources are separated from image datasets.
+These statistics come from:
+- [data/processed/gold/build_full_gold_stats.json](/Users/renataalieva/Desktop/MDS/pickmeal-ml/data/processed/gold/build_full_gold_stats.json)
 
-## Stage 2 - Annotation pipeline for parser evaluation
-A parser gold set was created through an annotation workflow.
+## Current model and system results
 
-Completed work:
-- created annotation batches;
-- prepared support files for annotation;
-- used LLM-assisted annotation for menu items;
-- reviewed uncertain rows;
-- finalized batch-level gold files;
-- rebuilt OCR files for annotation batches.
+### OCR benchmark
 
-## Stage 3 - Gold dataset assembly
-The annotation batches were merged into one parser dataset.
+From [reports/ocr_backend_benchmark_cascade_v1/ocr_backend_metrics.json](/Users/renataalieva/Desktop/MDS/pickmeal-ml/reports/ocr_backend_benchmark_cascade_v1/ocr_backend_metrics.json):
 
-Completed work:
-- merged reviewed annotation batches;
-- removed duplicates;
-- built a unified menu-level JSONL file;
-- split the dataset by `menu_id` into train, validation, and test sets.
+- `EasyOCR`: `item_f1 = 0.6433`, `price_accuracy = 0.4451`
+- `PaddleOCR`: `item_f1 = 0.7034`, `price_accuracy = 0.9524`
 
-Current parser dataset:
-- 39 menus
-- 1012 item rows after merge and dedup
-- split by menu_id:
-  - train: 24 menus
-  - valid: 7 menus
-  - test: 8 menus
+### Line-role classifier
 
-## Stage 4 - Parser baseline
-A first rule-based parser baseline was evaluated on the menu-level gold set.
+From [reports/line_role_expanded_sgd_v1/line_role_metrics.json](/Users/renataalieva/Desktop/MDS/pickmeal-ml/reports/line_role_expanded_sgd_v1/line_role_metrics.json):
 
-### Validation results
-- item precision: 0.3037
-- item recall: 0.3009
-- item F1: 0.3023
-- section accuracy: 0.0615
-- price accuracy: 0.4074
-- description exact match: 0.0000
+- `accuracy = 0.8483`
+- `macro_f1 = 0.7023`
+- `weighted_f1 = 0.8492`
 
-### Test results
-- item precision: 0.2955
-- item recall: 0.3318
-- item F1: 0.3126
-- section accuracy: 0.0000
-- price accuracy: 0.3333
-- description exact match: 0.0000
+### Parser
 
-## Main findings so far
+From [reports/parser_cascade_v1_expanded/parser_metrics_test.json](/Users/renataalieva/Desktop/MDS/pickmeal-ml/reports/parser_cascade_v1_expanded/parser_metrics_test.json):
 
-The parser baseline is working, but it is still weak.
-
-The main current error sources are:
-- missed menu items;
-- false positive items;
-- empty predicted names;
-- wrong section assignment;
-- wrong price extraction;
-- weak multiline description grouping.
-
-This means that the current bottleneck is not data collection alone.  
-The main next step is to improve parser logic.
+- `item_precision = 0.6244`
+- `item_recall = 0.3196`
+- `item_f1 = 0.4228`
+- `section_accuracy = 0.5119`
+- `price_accuracy = 0.3984`
 
 ## Repository structure
 
 ```text
 src/pickmeal_ml/data/
-    build_manifests.py
-    make_annotation_batch.py
-    finalize_llm_annotation.py
-    rebuild_existing_batch_ocr.py
-    merge_annotation_batches.py
     build_full_gold_jsonl.py
-    split_full_gold_by_menu_id.py
-    make_clean_detection_dataset.py
+    build_line_role_dataset.py
+    build_manifests.py
+    import_gpt_annotation_batches.py
+    prepare_gpt_annotation_batch.py
+    validate_gpt_annotation.py
+    ...
 
 src/pickmeal_ml/models/
-    menu_structuring_baseline.py
-    evaluate_parser_full.py
-    hybrid_recommender_baseline.py
-    train_yolo_baseline.py
+    benchmark_ocr_backends.py
+    evaluate_parser_with_module_layout.py
+    line_role_runtime.py
+    menu_structuring_baseline_v2.py
+    menu_structuring_cascade_v1.py
+    train_line_role_classifier.py
+    ...
 
-notebooks/
-    01_eda_menu_datasets.ipynb
-    03_checkpoint3_dataset_and_eda.ipynb
+service/app/
+    api/routes/
+    services/
+    main.py
+    schemas.py
 
-reports/parser_baseline/
-    parser_metrics_valid.json
-    parser_metrics_test.json
-    parser_errors_valid.csv
-    parser_errors_test.csv
+service/streamlit_app.py
+docker-compose.yml
+Dockerfile.api
+Dockerfile.streamlit
+```
+
+## Running the project locally
+
+### API and Streamlit without Docker
+
+```bash
+pip install -r service/requirements-service.txt
+uvicorn service.app.main:app
+streamlit run service/streamlit_app.py
+```
+
+### Full stack with Docker
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+This starts:
+- API on `http://localhost:8000`
+- Streamlit on `http://localhost:8501`
+- PostgreSQL with `pgvector`
+
+## Storage layer
+
+The service can persist results to PostgreSQL when `PICKMEAL_DATABASE_URL` is configured.
+
+Current persisted entities:
+- `menu_sessions`
+- `parsed_items`
+- `dish_embeddings`
+- `recommendation_runs`
+
+The service also exposes similarity lookup over stored dish embeddings through `pgvector`.
+
+## What is already implemented
+
+- expanded parser gold dataset
+- line-role model training
+- OCR backend comparison
+- parser evaluation
+- FastAPI service
+- Streamlit demo
+- nutrition and allergen enrichment
+- recommendation and budget combinations
+- PostgreSQL + pgvector persistence
+- Docker packaging
+- optional LLM-based dish card generation
+
+## What is still future work
+
+- stronger parser models with higher recall
+- richer nutrition ingestion and refresh
+- LLM-based text enrichment
+- more robust normalization and dish catalog building
+- monitoring and production-grade logging
