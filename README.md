@@ -30,6 +30,7 @@ The current end-to-end flow is:
 - FastAPI for the API layer
 - Streamlit for the demo UI
 - PostgreSQL + `pgvector` for storage and similarity search
+- optional OpenAI-compatible LLM enrichment for human-friendly dish cards
 - Docker + `docker-compose` for local deployment
 
 ## Data sources
@@ -156,6 +157,7 @@ The service also exposes similarity lookup over stored dish embeddings through `
 - recommendation and budget combinations
 - PostgreSQL + pgvector persistence
 - Docker packaging
+- optional LLM-based dish card generation
 
 ## What is still future work
 

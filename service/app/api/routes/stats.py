@@ -3,9 +3,10 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from ...config import get_settings
-from ...schemas import DatasetStatsResponse, LineRoleStatsResponse, OCRStatsResponse, ParserStatsResponse, StorageStatsResponse
+from ...schemas import DatasetStatsResponse, LLMStatsResponse, LineRoleStatsResponse, OCRStatsResponse, ParserStatsResponse, StorageStatsResponse
 from ...services.stats_service import (
     load_dataset_summary,
+    load_llm_stats,
     load_line_role_metrics,
     load_line_role_report,
     load_ocr_stats,
@@ -51,3 +52,9 @@ def ocr_stats() -> OCRStatsResponse:
 def storage_stats() -> StorageStatsResponse:
     payload = load_storage_stats()
     return StorageStatsResponse(**payload)
+
+
+@router.get("/llm", response_model=LLMStatsResponse)
+def llm_stats() -> LLMStatsResponse:
+    payload = load_llm_stats()
+    return LLMStatsResponse(**payload)

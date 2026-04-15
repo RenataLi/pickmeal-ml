@@ -14,6 +14,7 @@ The current service supports:
 - recommendation and budget-aware dish combinations
 - PostgreSQL + `pgvector` storage for parsed sessions, recommendation runs, and dish embeddings
 - similarity search over stored dishes
+- optional LLM-based dish card generation through an OpenAI-compatible API
 
 ## Run locally
 
@@ -67,12 +68,14 @@ See [.env.example](/Users/renataalieva/Desktop/MDS/pickmeal-ml/.env.example) for
 - `GET /stats/line-role`
 - `GET /stats/ocr`
 - `GET /stats/storage`
+- `GET /stats/llm`
 
 ### Parsing and recommendation
 
 - `POST /parse/text`
 - `POST /parse/image`
 - `POST /recommend`
+- `POST /llm/enrich-items`
 
 ### Storage and retrieval
 

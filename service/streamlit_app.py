@@ -76,6 +76,8 @@ def init_state():
         "parse_error": None,
         "recommend_payload": None,
         "recommend_error": None,
+        "llm_payload": None,
+        "llm_error": None,
         "parsed_signature": None,
     }
     for key, value in defaults.items():
@@ -611,6 +613,42 @@ def render_combo_cards(combo_df: pd.DataFrame):
         )
 
 
+def render_llm_cards(llm_df: pd.DataFrame):
+    if llm_df.empty:
+        st.info("No LLM dish cards are available yet.")
+        return
+
+    for _, row in llm_df.iterrows():
+        dish_name = row.get("dish_name", "Unnamed dish")
+        section = row.get("section") or "No section"
+        summary = row.get("llm_summary") or "No summary returned."
+        why_it_fits = row.get("llm_why_it_fits") or "No fit note returned."
+        caution_note = row.get("llm_caution_note") or "No caution note returned."
+        st.markdown(
+            f"""
+            <div class='pm-reco-card'>
+                <div class='pm-reco-top'>
+                    <div>
+                        <p class='pm-reco-name'>{dish_name}</p>
+                        <div class='pm-reco-meta'>{section}</div>
+                    </div>
+                    <div class='pm-reco-score'>LLM card</div>
+                </div>
+                <div class='pm-reco-meta' style='margin-top:12px;color:#1f2933;'>{summary}</div>
+                <div class='pm-reco-reasons'>
+                    <span class='pm-soft-pill'>Why it fits</span>
+                    <span>{why_it_fits}</span>
+                </div>
+                <div class='pm-reco-reasons'>
+                    <span class='pm-soft-pill'>Caution</span>
+                    <span>{caution_note}</span>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+
 def overlay_ocr_boxes(image: Image.Image, ocr_df: pd.DataFrame) -> Image.Image:
     canvas = image.copy()
     draw = ImageDraw.Draw(canvas)
@@ -722,6 +760,30 @@ def render_dashboard(api_url: str):
         )
         show_dataframe(stats_rows, height=120)
 
+    llm_stats = fetch_api_json(api_url, "/stats/llm")
+    if isinstance(llm_stats, dict):
+        st.markdown("### LLM enrichment")
+        l1, l2, l3, l4 = st.columns(4)
+        with l1:
+            metric_card("LLM enabled", "yes" if llm_stats.get("enabled") else "no", "Feature flag status")
+        with l2:
+            metric_card("LLM configured", "yes" if llm_stats.get("configured") else "no", "Base URL, key, and model")
+        with l3:
+            metric_card("LLM model", str(llm_stats.get("model") or "—"), "Configured external model")
+        with l4:
+            metric_card("Max items per call", str(llm_stats.get("max_items_per_request") or "—"), "Scope-limited enrichment")
+        llm_df = pd.DataFrame(
+            [
+                {
+                    "base_url_present": llm_stats.get("base_url_present"),
+                    "api_key_present": llm_stats.get("api_key_present"),
+                    "timeout_seconds": llm_stats.get("timeout_seconds"),
+                    "last_error": llm_stats.get("last_error") or "",
+                }
+            ]
+        )
+        show_dataframe(llm_df, height=120)
+
 
 def render_dataset_tab():
     st.subheader("Dataset overview")
@@ -775,6 +837,7 @@ def render_how_it_works():
         4. The line-role model labels OCR rows as item, price, section, description, or noise.
         5. A nutrition layer adds ingredient hints, allergen signals, diet flags, and calorie ranges.
         6. The recommendation layer applies hard filters, ranks relevant dishes, and can build feasible dish combinations under budget and calorie limits.
+        7. An optional LLM layer can generate user-facing dish cards and short explanation text.
         """
     )
 
@@ -865,11 +928,15 @@ with home_tab:
             st.session_state["parse_error"] = None
             st.session_state["recommend_payload"] = None
             st.session_state["recommend_error"] = None
+            st.session_state["llm_payload"] = None
+            st.session_state["llm_error"] = None
     else:
         st.session_state["parsed_payload"] = None
         st.session_state["parse_error"] = None
         st.session_state["recommend_payload"] = None
         st.session_state["recommend_error"] = None
+        st.session_state["llm_payload"] = None
+        st.session_state["llm_error"] = None
         st.session_state["parsed_signature"] = None
 
     with control_col:
@@ -888,6 +955,8 @@ with home_tab:
                     st.session_state["parse_error"] = None
                     st.session_state["recommend_payload"] = None
                     st.session_state["recommend_error"] = None
+                    st.session_state["llm_payload"] = None
+                    st.session_state["llm_error"] = None
                     st.session_state["parsed_signature"] = upload_signature
                 else:
                     try:
@@ -938,6 +1007,53 @@ with home_tab:
         with side_col:
             st.markdown("<p class='pm-section-title'>OCR lines</p>", unsafe_allow_html=True)
             show_dataframe(ocr_df[["line_order", "text", "ocr_confidence"]] if not ocr_df.empty else ocr_df, height=360)
+
+        st.markdown("<p class='pm-section-title'>LLM dish cards</p>", unsafe_allow_html=True)
+        st.caption("Optional layer: generate concise user-facing dish cards from already parsed items.")
+        with st.form("llm_enrichment_form"):
+            llm_col1, llm_col2 = st.columns([1.5, 1.0])
+            with llm_col1:
+                llm_context = st.text_input(
+                    "LLM context",
+                    value="The user wants helpful, concise dish cards with clear allergy and calorie caveats.",
+                    key="llm_context_input",
+                )
+            with llm_col2:
+                llm_top_k = st.slider("How many items to enrich", min_value=1, max_value=6, value=4, key="llm_top_k_slider")
+            llm_clicked = st.form_submit_button("Generate LLM dish cards")
+
+        if llm_clicked:
+            llm_request = {
+                "items": payload["items"],
+                "user_context": llm_context,
+                "top_k": llm_top_k,
+            }
+            try:
+                response = requests.post(f"{api_url}/llm/enrich-items", json=llm_request, timeout=180)
+                if response.ok:
+                    st.session_state["llm_payload"] = response.json()
+                    st.session_state["llm_error"] = None
+                else:
+                    try:
+                        st.session_state["llm_error"] = response.json()
+                    except Exception:
+                        st.session_state["llm_error"] = response.text
+                    st.session_state["llm_payload"] = None
+            except Exception as exc:
+                st.session_state["llm_error"] = str(exc)
+                st.session_state["llm_payload"] = None
+
+        llm_error = st.session_state.get("llm_error")
+        if llm_error:
+            st.warning(llm_error)
+
+        llm_payload = st.session_state.get("llm_payload")
+        if llm_payload:
+            st.info(f"LLM provider: {llm_payload.get('provider_label')} · model: {llm_payload.get('model')}")
+            llm_df = pd.DataFrame(llm_payload.get("items", []))
+            render_llm_cards(llm_df)
+            with st.expander("LLM item table"):
+                show_dataframe(llm_df, height=240)
 
         st.markdown("<p class='pm-section-title'>Dish recommendation</p>", unsafe_allow_html=True)
         st.caption("Use user preferences to rank parsed dishes. The recommendation engine is selected automatically unless you override it.")

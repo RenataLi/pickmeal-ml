@@ -42,6 +42,9 @@ class ParsedItem(BaseModel):
     calories_high: float | None = None
     nutrition_confidence: float | None = None
     enrichment_notes: list[str] = Field(default_factory=list)
+    llm_summary: str | None = None
+    llm_why_it_fits: str | None = None
+    llm_caution_note: str | None = None
     parser_confidence: float | None = None
 
 
@@ -99,6 +102,17 @@ class StorageStatsResponse(BaseModel):
     embedding_model_name: str | None = None
     embedding_dimensions: int | None = None
     row_counts: dict[str, int] = Field(default_factory=dict)
+    last_error: str | None = None
+
+
+class LLMStatsResponse(BaseModel):
+    enabled: bool
+    configured: bool
+    base_url_present: bool
+    api_key_present: bool
+    model: str | None = None
+    timeout_seconds: int | None = None
+    max_items_per_request: int | None = None
     last_error: str | None = None
 
 
@@ -172,3 +186,17 @@ class SimilarDishRow(BaseModel):
 
 class SimilarDishesResponse(BaseModel):
     rows: list[SimilarDishRow] = Field(default_factory=list)
+
+
+class LLMItemEnrichmentRequest(BaseModel):
+    items: list[ParsedItem]
+    user_context: str | None = None
+    top_k: int = 5
+
+
+class LLMItemEnrichmentResponse(BaseModel):
+    provider_label: str
+    model: str
+    n_items_requested: int
+    n_items_returned: int
+    items: list[ParsedItem] = Field(default_factory=list)

@@ -6,6 +6,7 @@ from pathlib import Path
 import pandas as pd
 
 from ..config import get_settings
+from .llm_service import load_llm_stats as _load_llm_stats
 from .ocr_service import get_ocr_runtime_info
 from .storage_service import load_storage_stats as _load_storage_stats
 
@@ -92,3 +93,7 @@ def load_ocr_stats() -> dict:
 
 def load_storage_stats() -> dict:
     return _load_storage_stats()
+
+
+def load_llm_stats() -> dict:
+    return _load_llm_stats()
