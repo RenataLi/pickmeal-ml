@@ -9,10 +9,7 @@ Pillow>=10.0
 python-multipart>=0.0.9
 psycopg[binary]>=3.1
 easyocr>=1.7
+sentence-transformers>=3.0
 paddleocr>=3.4
 paddlepaddle>=3.2,<3.3; platform_system == "Linux" and (platform_machine == "aarch64" or platform_machine == "arm64")
 paddlepaddle>=3.3; platform_system != "Linux" or (platform_machine != "aarch64" and platform_machine != "arm64")
-
-# Optional but useful
-# sentence-transformers>=3.0
-# qdrant-client>=1.9

@@ -104,6 +104,7 @@ class StorageStatsResponse(BaseModel):
     embedding_dimensions: int | None = None
     vector_backend: str | None = None
     row_counts: dict[str, int] = Field(default_factory=dict)
+    source_kind_counts: dict[str, int] = Field(default_factory=dict)
     last_error: str | None = None
 
 
