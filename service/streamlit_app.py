@@ -4,6 +4,7 @@ import base64
 import io
 import json
 import os
+import platform
 from pathlib import Path
 
 import pandas as pd
@@ -35,6 +36,14 @@ def resolve_api_url() -> str:
             or "http://api:8000"
         )
     return normalize_api_url(os.getenv("PICKMEAL_API_URL") or "http://127.0.0.1:8000")
+
+
+def paddle_docker_arm_is_experimental() -> bool:
+    if not running_in_docker():
+        return False
+    if os.getenv("PICKMEAL_ALLOW_PADDLE_DOCKER_ARM", "").strip().lower() in {"1", "true", "yes", "on"}:
+        return False
+    return platform.machine().lower() in {"arm64", "aarch64"}
 
 
 API_URL = resolve_api_url()
@@ -680,6 +689,7 @@ def metric_card(title: str, value: str, help_text: str | None = None):
 def render_summary_cards(payload: dict, items_df: pd.DataFrame, ocr_df: pd.DataFrame, line_roles_df: pd.DataFrame):
     parser_label = payload.get("parser_module", "unknown").split(".")[-1]
     ocr_backend = payload.get("ocr_backend", "unknown")
+    requested_ocr_backend = payload.get("requested_ocr_backend") or ocr_backend
     line_role_status = "loaded" if payload.get("line_role_model_loaded") else "not loaded"
     avg_conf = "—"
     if not ocr_df.empty and "ocr_confidence" in ocr_df.columns:
@@ -696,9 +706,9 @@ def render_summary_cards(payload: dict, items_df: pd.DataFrame, ocr_df: pd.DataF
                 <div class='meta'>Structured menu items</div>
             </div>
             <div class='pm-summary-card'>
-                <div class='label'>OCR backend</div>
+                <div class='label'>OCR engine used</div>
                 <div class='value' style='font-size:1.2rem'>{ocr_backend}</div>
-                <div class='meta'>{len(ocr_df)} detected text rows</div>
+                <div class='meta'>Requested: {requested_ocr_backend} · {len(ocr_df)} detected text rows</div>
             </div>
             <div class='pm-summary-card'>
                 <div class='label'>OCR confidence</div>
@@ -723,12 +733,69 @@ def render_summary_cards(payload: dict, items_df: pd.DataFrame, ocr_df: pd.DataF
 
 def render_status_chips(payload: dict):
     parser_label = payload.get("parser_module", "unknown").split(".")[-1]
+    requested_ocr_backend = payload.get("requested_ocr_backend") or payload.get("ocr_backend", "unknown")
     chips = [
-        f"<span class='pm-chip'>OCR: {payload.get('ocr_backend', 'unknown')}</span>",
+        f"<span class='pm-chip'>Requested OCR: {requested_ocr_backend}</span>",
+        f"<span class='pm-chip'>Used OCR: {payload.get('ocr_backend', 'unknown')}</span>",
         f"<span class='pm-chip'>Parser: {parser_label}</span>",
         f"<span class='pm-chip'>Line-role: {'available' if payload.get('line_role_model_loaded') else 'missing'}</span>",
     ]
     st.markdown(f"<div class='pm-chip-row'>{''.join(chips)}</div>", unsafe_allow_html=True)
+
+
+def render_storage_snapshot_tools(api_url: str):
+    st.markdown("<p class='pm-section-title'>Storage snapshot</p>", unsafe_allow_html=True)
+    st.caption("Normal docker restarts keep PostgreSQL data. The database is wiped only if you run `docker compose down -v`. Use a snapshot as an extra safety backup.")
+
+    snapshot_payload = fetch_api_json(api_url, "/storage/snapshot", method="GET", timeout=120)
+    if isinstance(snapshot_payload, dict):
+        row_counts = snapshot_payload.get("row_counts", {})
+        st.caption(
+            f"Current storage: {row_counts.get('menu_sessions', 0)} sessions, "
+            f"{row_counts.get('parsed_items', 0)} parsed items, "
+            f"{row_counts.get('dish_embeddings', 0)} embeddings."
+        )
+        snapshot_text = json.dumps(snapshot_payload, ensure_ascii=False, indent=2)
+        st.download_button(
+            "Download storage snapshot",
+            data=snapshot_text,
+            file_name="pickmeal_storage_snapshot.json",
+            mime="application/json",
+            use_container_width=True,
+        )
+    else:
+        st.warning("Could not export a storage snapshot from the API.")
+
+    restore_file = st.file_uploader(
+        "Restore storage snapshot",
+        type=["json"],
+        key="storage_snapshot_restore_uploader",
+        help="This replaces the current PostgreSQL storage content with the uploaded snapshot.",
+    )
+    if restore_file is not None:
+        if button_stretch("Restore storage from snapshot", type="secondary"):
+            try:
+                snapshot = json.loads(restore_file.getvalue().decode("utf-8"))
+                response = requests.post(
+                    f"{api_url}/storage/snapshot/import",
+                    json={"snapshot": snapshot},
+                    timeout=180,
+                )
+                if response.ok:
+                    imported = response.json().get("imported_counts", {})
+                    st.success(
+                        "Snapshot restored: "
+                        f"{imported.get('menu_sessions', 0)} sessions, "
+                        f"{imported.get('parsed_items', 0)} items, "
+                        f"{imported.get('dish_embeddings', 0)} embeddings."
+                    )
+                else:
+                    try:
+                        st.error(format_api_error(response.json()))
+                    except Exception:
+                        st.error(response.text)
+            except Exception as exc:
+                st.error(str(exc))
 
 
 def render_panel_header(title: str, subtitle: str | None = None):
@@ -1193,12 +1260,17 @@ with home_tab:
         langs = st.text_input("OCR languages", value="en", key="ocr_langs_input")
         ocr_backend_default_index = OCR_BACKEND_OPTIONS.index(DEFAULT_OCR_BACKEND) if DEFAULT_OCR_BACKEND in OCR_BACKEND_OPTIONS else 0
         ocr_backend = st.selectbox(
-            "OCR backend",
+            "OCR engine",
             options=OCR_BACKEND_OPTIONS,
             index=ocr_backend_default_index,
             format_func=lambda option: OCR_BACKEND_LABELS.get(option, option),
             key="ocr_backend_select",
         )
+        if ocr_backend.startswith("paddleocr") and paddle_docker_arm_is_experimental():
+            st.info(
+                "PaddleOCR in Docker on Apple Silicon is currently experimental. "
+                "If it is not allowed in the runtime, the service will fall back to RapidOCR and show this in the result summary."
+            )
         rotation_deg = st.selectbox("Rotate image", options=[0, 90, 180, 270], format_func=lambda x: f"{x}°", index=0, key="rotation_deg_select")
         st.caption("Use rotation before parsing so the menu is upright for OCR and the parser.")
 
@@ -1272,6 +1344,8 @@ with home_tab:
         line_roles_df = pd.DataFrame(payload.get("line_roles", []))
 
         st.success(f"Parsed {len(items_df)} items from {len(ocr_df)} OCR lines")
+        if payload.get("ocr_backend_warning"):
+            st.info(payload["ocr_backend_warning"])
         if payload.get("session_id"):
             st.caption(f"Stored session: {payload['session_id']}")
         render_status_chips(payload)
@@ -1431,6 +1505,7 @@ with home_tab:
                     show_dataframe(combo_df, height=260)
 
         render_similar_dishes_lookup(api_url)
+        render_storage_snapshot_tools(api_url)
 
         if show_developer_tools:
             st.markdown("### Raw response")

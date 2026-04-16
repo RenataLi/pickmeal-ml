@@ -35,9 +35,15 @@ def _query_text(request: RecommendRequest) -> str:
 
 
 def _try_sentence_transformer(texts: list[str], query_text: str) -> EngineResult | None:
-    model = _load_sentence_transformer_model()
-    matrix = model.encode(texts, normalize_embeddings=True)
-    query_vec = model.encode([query_text], normalize_embeddings=True)
+    backend_kind, model = _load_sentence_transformer_model()
+    if backend_kind == "sentence_transformers":
+        matrix = model.encode(texts, normalize_embeddings=True)
+        query_vec = model.encode([query_text], normalize_embeddings=True)
+    else:
+        matrix = np.asarray(list(model.embed(texts)), dtype=float)
+        query_vec = np.asarray(list(model.embed([query_text])), dtype=float)
+        matrix = _normalize_embedding_matrix(matrix)
+        query_vec = _normalize_embedding_matrix(query_vec)
     scores = cosine_similarity(query_vec, matrix)[0]
     return EngineResult(engine_used="sentence_transformer", scores=np.asarray(scores))
 
@@ -46,15 +52,28 @@ def _try_sentence_transformer(texts: list[str], query_text: str) -> EngineResult
 def _load_sentence_transformer_model():
     try:
         from sentence_transformers import SentenceTransformer
-    except Exception as exc:
-        raise RuntimeError("sentence-transformers is not installed in the current environment.") from exc
+        return "sentence_transformers", SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+    except Exception:
+        try:
+            from fastembed import TextEmbedding
+        except Exception as exc:
+            raise RuntimeError(
+                "No semantic embedding backend is installed. Install sentence-transformers or fastembed for the sentence_transformer engine."
+            ) from exc
+        try:
+            return "fastembed", TextEmbedding(model_name="BAAI/bge-small-en-v1.5")
+        except Exception as exc:
+            raise RuntimeError(
+                "Could not load the semantic embedding model. Check internet access for the first download or make sure the model is cached locally."
+            ) from exc
 
-    try:
-        return SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-    except Exception as exc:
-        raise RuntimeError(
-            "Could not load the all-MiniLM-L6-v2 sentence-transformer model. Check internet access for the first download or make sure the model is cached locally."
-        ) from exc
+
+def _normalize_embedding_matrix(matrix: np.ndarray) -> np.ndarray:
+    if matrix.size == 0:
+        return matrix
+    norms = np.linalg.norm(matrix, axis=1, keepdims=True)
+    norms[norms == 0] = 1.0
+    return matrix / norms
 
 
 def _tfidf_scores(texts: list[str], query_text: str) -> EngineResult:

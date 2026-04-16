@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 import json
 import re
 import uuid
@@ -132,6 +133,18 @@ def _is_valid_similarity_candidate(
 
 def _json_dumps(payload: Any) -> str:
     return json.dumps(payload, ensure_ascii=False)
+
+
+def _json_safe_value(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {str(key): _json_safe_value(val) for key, val in value.items()}
+    if isinstance(value, list):
+        return [_json_safe_value(item) for item in value]
+    if isinstance(value, tuple):
+        return [_json_safe_value(item) for item in value]
+    if isinstance(value, (uuid.UUID, datetime)):
+        return str(value)
+    return value
 
 
 def _storage_seed_path() -> Path:
@@ -815,3 +828,325 @@ def load_storage_stats() -> dict[str, Any]:
     except Exception as exc:
         payload["last_error"] = str(exc)
     return payload
+
+
+def export_storage_snapshot() -> dict[str, Any]:
+    initialize_storage()
+    settings = get_settings()
+    if not settings.database_url or not _RUNTIME_STATE["initialized"]:
+        raise RuntimeError("Storage is not initialized.")
+
+    psycopg = _load_psycopg()
+    if psycopg is None:
+        raise RuntimeError("psycopg is not installed.")
+
+    tables: dict[str, list[dict[str, Any]]] = {}
+    try:
+        with psycopg.connect(settings.database_url, autocommit=True) as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT
+                        session_id::text,
+                        created_at::text,
+                        source_kind,
+                        ocr_backend,
+                        parser_module,
+                        n_lines,
+                        n_items,
+                        raw_ocr_lines,
+                        line_roles
+                    FROM menu_sessions
+                    ORDER BY created_at, session_id
+                    """
+                )
+                tables["menu_sessions"] = [
+                    {
+                        "session_id": session_id,
+                        "created_at": created_at,
+                        "source_kind": source_kind,
+                        "ocr_backend": ocr_backend,
+                        "parser_module": parser_module,
+                        "n_lines": n_lines,
+                        "n_items": n_items,
+                        "raw_ocr_lines": _json_safe_value(raw_ocr_lines),
+                        "line_roles": _json_safe_value(line_roles),
+                    }
+                    for session_id, created_at, source_kind, ocr_backend, parser_module, n_lines, n_items, raw_ocr_lines, line_roles in cur.fetchall()
+                ]
+                cur.execute(
+                    """
+                    SELECT
+                        session_id::text,
+                        local_id,
+                        dish_name,
+                        description,
+                        section,
+                        price_value,
+                        price_currency,
+                        price_text,
+                        ingredient_hints,
+                        explicit_allergens,
+                        diet_flags,
+                        calories_low,
+                        calories_mid,
+                        calories_high,
+                        nutrition_confidence,
+                        enrichment_notes,
+                        parser_confidence
+                    FROM parsed_items
+                    ORDER BY session_id, local_id
+                    """
+                )
+                tables["parsed_items"] = [
+                    {
+                        "session_id": session_id,
+                        "local_id": local_id,
+                        "dish_name": dish_name,
+                        "description": description,
+                        "section": section,
+                        "price_value": price_value,
+                        "price_currency": price_currency,
+                        "price_text": price_text,
+                        "ingredient_hints": _json_safe_value(ingredient_hints),
+                        "explicit_allergens": _json_safe_value(explicit_allergens),
+                        "diet_flags": _json_safe_value(diet_flags),
+                        "calories_low": calories_low,
+                        "calories_mid": calories_mid,
+                        "calories_high": calories_high,
+                        "nutrition_confidence": nutrition_confidence,
+                        "enrichment_notes": _json_safe_value(enrichment_notes),
+                        "parser_confidence": parser_confidence,
+                    }
+                    for session_id, local_id, dish_name, description, section, price_value, price_currency, price_text, ingredient_hints, explicit_allergens, diet_flags, calories_low, calories_mid, calories_high, nutrition_confidence, enrichment_notes, parser_confidence in cur.fetchall()
+                ]
+                cur.execute(
+                    """
+                    SELECT
+                        session_id::text,
+                        local_id,
+                        text_value,
+                        embedding_model,
+                        embedding_json,
+                        metadata
+                    FROM dish_embeddings
+                    ORDER BY session_id, local_id
+                    """
+                )
+                tables["dish_embeddings"] = [
+                    {
+                        "session_id": session_id,
+                        "local_id": local_id,
+                        "text_value": text_value,
+                        "embedding_model": embedding_model,
+                        "embedding_json": _json_safe_value(embedding_json),
+                        "metadata": _json_safe_value(metadata),
+                    }
+                    for session_id, local_id, text_value, embedding_model, embedding_json, metadata in cur.fetchall()
+                ]
+                cur.execute(
+                    """
+                    SELECT
+                        recommendation_id::text,
+                        created_at::text,
+                        session_id::text,
+                        request_payload,
+                        engine_used,
+                        n_candidates,
+                        recommendation_rows,
+                        combo_rows
+                    FROM recommendation_runs
+                    ORDER BY created_at, recommendation_id
+                    """
+                )
+                tables["recommendation_runs"] = [
+                    {
+                        "recommendation_id": recommendation_id,
+                        "created_at": created_at,
+                        "session_id": session_id,
+                        "request_payload": _json_safe_value(request_payload),
+                        "engine_used": engine_used,
+                        "n_candidates": n_candidates,
+                        "recommendation_rows": _json_safe_value(recommendation_rows),
+                        "combo_rows": _json_safe_value(combo_rows),
+                    }
+                    for recommendation_id, created_at, session_id, request_payload, engine_used, n_candidates, recommendation_rows, combo_rows in cur.fetchall()
+                ]
+        return {
+            "schema_version": 1,
+            "exported_at": datetime.now(timezone.utc).isoformat(),
+            "vector_backend": _RUNTIME_STATE.get("vector_backend"),
+            "row_counts": {table_name: len(rows) for table_name, rows in tables.items()},
+            "tables": tables,
+        }
+    except Exception as exc:
+        _RUNTIME_STATE["last_error"] = str(exc)
+        raise
+
+
+def import_storage_snapshot(snapshot: dict[str, Any]) -> dict[str, int]:
+    initialize_storage()
+    settings = get_settings()
+    if not settings.database_url or not _RUNTIME_STATE["initialized"]:
+        raise RuntimeError("Storage is not initialized.")
+
+    psycopg = _load_psycopg()
+    if psycopg is None:
+        raise RuntimeError("psycopg is not installed.")
+
+    tables = snapshot.get("tables")
+    if not isinstance(tables, dict):
+        raise RuntimeError("Snapshot payload does not contain a valid tables object.")
+
+    menu_sessions = tables.get("menu_sessions") or []
+    parsed_items = tables.get("parsed_items") or []
+    dish_embeddings = tables.get("dish_embeddings") or []
+    recommendation_runs = tables.get("recommendation_runs") or []
+
+    try:
+        with psycopg.connect(settings.database_url, autocommit=True) as conn:
+            with conn.cursor() as cur:
+                cur.execute("TRUNCATE recommendation_runs, dish_embeddings, parsed_items, menu_sessions RESTART IDENTITY CASCADE")
+                for row in menu_sessions:
+                    cur.execute(
+                        """
+                        INSERT INTO menu_sessions (
+                            session_id,
+                            created_at,
+                            source_kind,
+                            ocr_backend,
+                            parser_module,
+                            n_lines,
+                            n_items,
+                            raw_ocr_lines,
+                            line_roles
+                        )
+                        VALUES (%s, %s::timestamptz, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb)
+                        """,
+                        (
+                            row.get("session_id"),
+                            row.get("created_at"),
+                            row.get("source_kind"),
+                            row.get("ocr_backend"),
+                            row.get("parser_module"),
+                            row.get("n_lines", 0),
+                            row.get("n_items", 0),
+                            _json_dumps(row.get("raw_ocr_lines") or []),
+                            _json_dumps(row.get("line_roles") or []),
+                        ),
+                    )
+                for row in parsed_items:
+                    cur.execute(
+                        """
+                        INSERT INTO parsed_items (
+                            session_id,
+                            local_id,
+                            dish_name,
+                            description,
+                            section,
+                            price_value,
+                            price_currency,
+                            price_text,
+                            ingredient_hints,
+                            explicit_allergens,
+                            diet_flags,
+                            calories_low,
+                            calories_mid,
+                            calories_high,
+                            nutrition_confidence,
+                            enrichment_notes,
+                            parser_confidence
+                        )
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, %s::jsonb, %s, %s, %s, %s, %s::jsonb, %s)
+                        """,
+                        (
+                            row.get("session_id"),
+                            row.get("local_id"),
+                            row.get("dish_name"),
+                            row.get("description"),
+                            row.get("section"),
+                            row.get("price_value"),
+                            row.get("price_currency"),
+                            row.get("price_text"),
+                            _json_dumps(row.get("ingredient_hints") or []),
+                            _json_dumps(row.get("explicit_allergens") or []),
+                            _json_dumps(row.get("diet_flags") or {}),
+                            row.get("calories_low"),
+                            row.get("calories_mid"),
+                            row.get("calories_high"),
+                            row.get("nutrition_confidence"),
+                            _json_dumps(row.get("enrichment_notes") or []),
+                            row.get("parser_confidence"),
+                        ),
+                    )
+                for row in dish_embeddings:
+                    cur.execute(
+                        """
+                        INSERT INTO dish_embeddings (
+                            session_id,
+                            local_id,
+                            text_value,
+                            embedding_model,
+                            embedding_json,
+                            metadata
+                        )
+                        VALUES (%s, %s, %s, %s, %s::jsonb, %s::jsonb)
+                        """,
+                        (
+                            row.get("session_id"),
+                            row.get("local_id"),
+                            row.get("text_value"),
+                            row.get("embedding_model") or settings.embedding_model_name,
+                            _json_dumps(row.get("embedding_json") or []),
+                            _json_dumps(row.get("metadata") or {}),
+                        ),
+                    )
+                    if _RUNTIME_STATE.get("vector_backend") == "pgvector":
+                        cur.execute(
+                            """
+                            UPDATE dish_embeddings
+                            SET embedding = %s::vector
+                            WHERE session_id = %s AND local_id = %s
+                            """,
+                            (
+                                _vector_literal([float(value) for value in (row.get("embedding_json") or [])]),
+                                row.get("session_id"),
+                                row.get("local_id"),
+                            ),
+                        )
+                for row in recommendation_runs:
+                    cur.execute(
+                        """
+                        INSERT INTO recommendation_runs (
+                            recommendation_id,
+                            created_at,
+                            session_id,
+                            request_payload,
+                            engine_used,
+                            n_candidates,
+                            recommendation_rows,
+                            combo_rows
+                        )
+                        VALUES (%s, %s::timestamptz, %s, %s::jsonb, %s, %s, %s::jsonb, %s::jsonb)
+                        """,
+                        (
+                            row.get("recommendation_id"),
+                            row.get("created_at"),
+                            row.get("session_id"),
+                            _json_dumps(row.get("request_payload") or {}),
+                            row.get("engine_used") or "unknown",
+                            row.get("n_candidates", 0),
+                            _json_dumps(row.get("recommendation_rows") or []),
+                            _json_dumps(row.get("combo_rows") or []),
+                        ),
+                    )
+        _RUNTIME_STATE["last_error"] = None
+        return {
+            "menu_sessions": len(menu_sessions),
+            "parsed_items": len(parsed_items),
+            "dish_embeddings": len(dish_embeddings),
+            "recommendation_runs": len(recommendation_runs),
+        }
+    except Exception as exc:
+        _RUNTIME_STATE["last_error"] = str(exc)
+        raise

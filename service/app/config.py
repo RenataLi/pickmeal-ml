@@ -30,6 +30,7 @@ class Settings(BaseModel):
     project_root: Path
     api_title: str = "PickMeal Service"
     api_version: str = "0.1.0"
+    service_role: str = os.getenv("PICKMEAL_SERVICE_ROLE", "gateway")
     database_url: str | None = (
         os.getenv("PICKMEAL_DATABASE_URL")
         or os.getenv("PICKMEAL_DATABASE_URL_LOCAL")
@@ -66,6 +67,11 @@ class Settings(BaseModel):
     line_role_model_path: str = os.getenv("PICKMEAL_LINE_ROLE_MODEL_PATH", "reports/line_role_expanded_sgd_v1/line_role_logreg.joblib")
     line_role_metrics_path: str = os.getenv("PICKMEAL_LINE_ROLE_METRICS_PATH", "reports/line_role_expanded_sgd_v1/line_role_metrics.json")
     line_role_report_path: str = os.getenv("PICKMEAL_LINE_ROLE_REPORT_PATH", "reports/line_role_expanded_sgd_v1/line_role_classification_report.json")
+    ocr_service_url: str | None = os.getenv("PICKMEAL_OCR_SERVICE_URL") or None
+    parser_service_url: str | None = os.getenv("PICKMEAL_PARSER_SERVICE_URL") or None
+    recommendation_service_url: str | None = os.getenv("PICKMEAL_RECOMMENDATION_SERVICE_URL") or None
+    llm_service_url: str | None = os.getenv("PICKMEAL_LLM_SERVICE_URL") or None
+    internal_service_timeout_seconds: int = int(os.getenv("PICKMEAL_INTERNAL_SERVICE_TIMEOUT_SECONDS", "300"))
 
 
 @lru_cache(maxsize=1)
