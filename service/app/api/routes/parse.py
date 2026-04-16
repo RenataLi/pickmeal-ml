@@ -7,7 +7,7 @@ from ...schemas import OCRLine, ParseResponse, ParseTextRequest
 from ...services.enrichment_service import enrich_items
 from ...services.line_role_service import line_role_model_is_available, predict_line_roles
 from ...services.ocr_service import run_ocr
-from ...services.parser_service import get_parser_module_name, parse_lines
+from ...services.parser_service import clean_parsed_items, get_parser_module_name, parse_lines
 from ...services.storage_service import persist_parse_result
 
 router = APIRouter(prefix="/parse", tags=["parse"])
@@ -24,8 +24,9 @@ def parse_text(payload: ParseTextRequest) -> ParseResponse:
         else:
             ocr_lines.append(line)
 
-    items = enrich_items(parse_lines(ocr_lines))
     line_roles = predict_line_roles(ocr_lines)
+    parsed_items = parse_lines(ocr_lines)
+    items = enrich_items(clean_parsed_items(parsed_items, line_roles))
     session_id = persist_parse_result(
         source_kind="text_input",
         ocr_backend="text_input",
@@ -58,8 +59,9 @@ async def parse_image(
         content = await file.read()
         ocr_result = run_ocr(content, langs=langs, backend=backend)
         ocr_lines = ocr_result.lines
-        items = enrich_items(parse_lines(ocr_lines))
         line_roles = predict_line_roles(ocr_lines)
+        parsed_items = parse_lines(ocr_lines)
+        items = enrich_items(clean_parsed_items(parsed_items, line_roles))
         session_id = persist_parse_result(
             source_kind="image_upload",
             ocr_backend=ocr_result.backend,

@@ -92,6 +92,7 @@ class OCRStatsResponse(BaseModel):
     available_backends: dict[str, bool] = Field(default_factory=dict)
     paddle_cache_dir: str | None = None
     paddle_detection_model: str | None = None
+    paddle_mobile_detection_model: str | None = None
     ocr_max_image_side: int | None = None
 
 
@@ -101,6 +102,7 @@ class StorageStatsResponse(BaseModel):
     database_url_present: bool
     embedding_model_name: str | None = None
     embedding_dimensions: int | None = None
+    vector_backend: str | None = None
     row_counts: dict[str, int] = Field(default_factory=dict)
     last_error: str | None = None
 
@@ -113,6 +115,26 @@ class LLMStatsResponse(BaseModel):
     model: str | None = None
     timeout_seconds: int | None = None
     max_items_per_request: int | None = None
+    last_error: str | None = None
+
+
+class RAGEvidenceRow(BaseModel):
+    item_local_id: str
+    source_type: str
+    source_id: str
+    title: str
+    similarity: float
+    content_preview: str
+
+
+class RAGStatsResponse(BaseModel):
+    enabled: bool
+    initialized: bool
+    vector_backend: str | None = None
+    top_k: int | None = None
+    dataset_path: str | None = None
+    document_count: int = 0
+    source_type_counts: dict[str, int] = Field(default_factory=dict)
     last_error: str | None = None
 
 
@@ -200,3 +222,4 @@ class LLMItemEnrichmentResponse(BaseModel):
     n_items_requested: int
     n_items_returned: int
     items: list[ParsedItem] = Field(default_factory=list)
+    retrieval_rows: list[RAGEvidenceRow] = Field(default_factory=list)

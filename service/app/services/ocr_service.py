@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import os
+import platform
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import Iterable
@@ -25,6 +26,12 @@ PADDLE_LANG_ALIASES = {
 PADDLE_REC_MODEL_NAMES = {
     "en": "en_PP-OCRv5_mobile_rec",
     "ru": "cyrillic_PP-OCRv5_mobile_rec",
+}
+
+PADDLE_BACKEND_ALIASES = {
+    "paddleocr": "paddleocr_quality",
+    "paddleocr_quality": "paddleocr_quality",
+    "paddleocr_mobile": "paddleocr_mobile",
 }
 
 
@@ -99,6 +106,17 @@ def _build_reader(langs_key: str):
     return easyocr.Reader(langs, gpu=False)
 
 
+@lru_cache(maxsize=2)
+def _build_rapidocr_engine():
+    try:
+        from rapidocr import RapidOCR
+    except Exception as exc:
+        raise RuntimeError(
+            "rapidocr is not installed. Install rapidocr and onnxruntime or switch OCR backend."
+        ) from exc
+    return RapidOCR()
+
+
 def _configure_paddle_env():
     settings = get_settings()
     hf_cache_dir = os.path.join(settings.paddle_cache_dir, "huggingface")
@@ -113,6 +131,20 @@ def _configure_paddle_env():
     os.environ.setdefault("HF_HOME", hf_cache_dir)
     os.environ.setdefault("HUGGINGFACE_HUB_CACHE", hf_cache_dir)
     os.environ.setdefault("MODELSCOPE_CACHE", modelscope_cache_dir)
+
+
+def _paddle_runtime_disabled_reason() -> str | None:
+    allow_override = os.getenv("PICKMEAL_ALLOW_PADDLE_DOCKER_ARM", "").strip().lower() in {"1", "true", "yes", "on"}
+    if allow_override:
+        return None
+    if not os.path.exists("/.dockerenv"):
+        return None
+    if platform.system().lower() != "linux":
+        return None
+    machine = platform.machine().lower()
+    if machine in {"aarch64", "arm64"}:
+        return "paddleocr is disabled in Docker on Linux ARM because this runtime is unstable and may segfault"
+    return None
 
 
 def _load_image_array(image_bytes: bytes, max_side: int) -> np.ndarray:
@@ -145,13 +177,21 @@ def _resolve_paddle_rec_model(langs_key: str) -> str:
     return PADDLE_REC_MODEL_NAMES.get(_resolve_paddle_lang(langs_key), "en_PP-OCRv5_mobile_rec")
 
 
+def _resolve_paddle_detector_model(backend_name: str) -> str:
+    settings = get_settings()
+    normalized = PADDLE_BACKEND_ALIASES.get((backend_name or "").strip().lower(), "paddleocr_quality")
+    if normalized == "paddleocr_mobile":
+        return settings.paddle_text_detection_mobile_model_name
+    return settings.paddle_text_detection_model_name
+
+
 def _paddle_model_dir(model_name: str) -> str:
     settings = get_settings()
     return os.path.join(settings.paddle_cache_dir, "official_models", model_name)
 
 
-def paddle_models_are_cached(langs_key: str) -> bool:
-    det_dir = _paddle_model_dir(get_settings().paddle_text_detection_model_name)
+def paddle_models_are_cached(langs_key: str, backend_name: str = "paddleocr_quality") -> bool:
+    det_dir = _paddle_model_dir(_resolve_paddle_detector_model(backend_name))
     rec_dir = _paddle_model_dir(_resolve_paddle_rec_model(langs_key))
     return os.path.isdir(det_dir) and os.path.isdir(rec_dir)
 
@@ -180,10 +220,9 @@ def _prefer_easy_for_image(image_bytes: bytes) -> bool:
     return longest_side > 2200 or area > 2_200_000
 
 
-@lru_cache(maxsize=4)
-def _build_paddleocr_reader(langs_key: str):
+@lru_cache(maxsize=8)
+def _build_paddleocr_reader(langs_key: str, detector_model_name: str):
     _configure_paddle_env()
-    settings = get_settings()
     try:
         from paddleocr import PaddleOCR
     except Exception as exc:
@@ -192,12 +231,12 @@ def _build_paddleocr_reader(langs_key: str):
         ) from exc
 
     return PaddleOCR(
-        text_detection_model_name=settings.paddle_text_detection_model_name,
+        text_detection_model_name=detector_model_name,
         text_recognition_model_name=_resolve_paddle_rec_model(langs_key),
         use_doc_orientation_classify=False,
         use_doc_unwarping=False,
         use_textline_orientation=False,
-        text_det_limit_side_len=settings.ocr_max_image_side,
+        text_det_limit_side_len=get_settings().ocr_max_image_side,
     )
 
 
@@ -230,10 +269,65 @@ def run_easyocr(image_bytes: bytes, langs: str | None = None) -> list[OCRLine]:
     return _with_line_order(rows)
 
 
-def run_paddleocr(image_bytes: bytes, langs: str | None = None) -> list[OCRLine]:
+def run_rapidocr(image_bytes: bytes, langs: str | None = None) -> list[OCRLine]:
+    settings = get_settings()
+    engine = _build_rapidocr_engine()
+    image_array = _load_image_array(image_bytes, settings.ocr_max_image_side)
+    result = engine(image_array)
+    if result is None:
+        return []
+    if isinstance(result, tuple):
+        result = result[0] if result else None
+        if result is None:
+            return []
+
+    boxes = getattr(result, "boxes", None)
+    texts = getattr(result, "txts", None)
+    scores = getattr(result, "scores", None)
+
+    if boxes is None:
+        boxes = []
+    if texts is None:
+        texts = []
+    if scores is None:
+        scores = []
+
+    rows: list[dict] = []
+    for idx, text in enumerate(texts):
+        text = str(text).strip()
+        if not text:
+            continue
+        score = None
+        if idx < len(scores):
+            try:
+                score = float(scores[idx])
+            except Exception:
+                score = None
+        if idx < len(boxes):
+            arr = np.asarray(boxes[idx])
+            if arr.size > 0:
+                xs = arr[:, 0].astype(float)
+                ys = arr[:, 1].astype(float)
+                rows.append(
+                    {
+                        "text": text,
+                        "ocr_confidence": score,
+                        "bbox_x1": float(xs.min()),
+                        "bbox_y1": float(ys.min()),
+                        "bbox_x2": float(xs.max()),
+                        "bbox_y2": float(ys.max()),
+                    }
+                )
+                continue
+        rows.append({"text": text, "ocr_confidence": score})
+    return _with_line_order(rows)
+
+
+def run_paddleocr(image_bytes: bytes, langs: str | None = None, backend_name: str = "paddleocr_quality") -> list[OCRLine]:
     settings = get_settings()
     langs_key = langs or settings.default_ocr_langs
-    reader = _build_paddleocr_reader(langs_key)
+    detector_model_name = _resolve_paddle_detector_model(backend_name)
+    reader = _build_paddleocr_reader(langs_key, detector_model_name)
 
     image_array = _load_image_array(image_bytes, settings.ocr_max_image_side)
     result = reader.predict(image_array)
@@ -271,9 +365,15 @@ def run_paddleocr(image_bytes: bytes, langs: str | None = None) -> list[OCRLine]
 def ocr_backend_is_available(backend: str) -> bool:
     name = (backend or "").strip().lower()
     try:
-        if name == "paddleocr":
+        if name in PADDLE_BACKEND_ALIASES:
+            if _paddle_runtime_disabled_reason():
+                return False
             _configure_paddle_env()
             import paddleocr  # noqa: F401
+            return True
+        if name == "rapidocr":
+            import rapidocr  # noqa: F401
+            import onnxruntime  # noqa: F401
             return True
         if name == "easyocr":
             import easyocr  # noqa: F401
@@ -285,16 +385,21 @@ def ocr_backend_is_available(backend: str) -> bool:
 
 def get_ocr_runtime_info() -> dict:
     settings = get_settings()
+    paddle_disabled_reason = _paddle_runtime_disabled_reason()
     return {
         "requested_backend": settings.ocr_backend,
         "fallback_backend": settings.ocr_fallback_backend,
         "available_backends": {
-            "paddleocr": ocr_backend_is_available("paddleocr"),
+            "paddleocr_quality": ocr_backend_is_available("paddleocr_quality"),
+            "paddleocr_mobile": ocr_backend_is_available("paddleocr_mobile"),
+            "rapidocr": ocr_backend_is_available("rapidocr"),
             "easyocr": ocr_backend_is_available("easyocr"),
         },
         "paddle_cache_dir": settings.paddle_cache_dir,
         "paddle_detection_model": settings.paddle_text_detection_model_name,
+        "paddle_mobile_detection_model": settings.paddle_text_detection_mobile_model_name,
         "ocr_max_image_side": settings.ocr_max_image_side,
+        "paddle_disabled_reason": paddle_disabled_reason,
     }
 
 
@@ -307,15 +412,18 @@ def run_ocr(
     requested = (backend or settings.ocr_backend or "easyocr").strip().lower()
     fallback = (settings.ocr_fallback_backend or "").strip().lower()
     easy_available = ocr_backend_is_available("easyocr")
-    paddle_available = ocr_backend_is_available("paddleocr")
+    rapid_available = ocr_backend_is_available("rapidocr")
+    paddle_available = ocr_backend_is_available("paddleocr_quality")
 
     if requested == "auto":
         langs_key = langs or settings.default_ocr_langs
+        if rapid_available:
+            return OCRRunResult(backend="rapidocr", lines=run_rapidocr(image_bytes, langs=langs))
         if easy_available and (_prefer_easy_for_image(image_bytes) or not paddle_available):
             return OCRRunResult(backend="easyocr", lines=run_easyocr(image_bytes, langs=langs))
-        if paddle_available and paddle_models_are_cached(langs_key):
+        if paddle_available and paddle_models_are_cached(langs_key, backend_name="paddleocr_mobile"):
             try:
-                return OCRRunResult(backend="paddleocr", lines=run_paddleocr(image_bytes, langs=langs))
+                return OCRRunResult(backend="paddleocr_mobile", lines=run_paddleocr(image_bytes, langs=langs, backend_name="paddleocr_mobile"))
             except Exception:
                 if easy_available:
                     easy_lines = run_easyocr(image_bytes, langs=langs)
@@ -323,8 +431,10 @@ def run_ocr(
                 raise
         if easy_available:
             return OCRRunResult(backend="easyocr", lines=run_easyocr(image_bytes, langs=langs))
+        if rapid_available:
+            return OCRRunResult(backend="rapidocr", lines=run_rapidocr(image_bytes, langs=langs))
         if paddle_available:
-            return OCRRunResult(backend="paddleocr", lines=run_paddleocr(image_bytes, langs=langs))
+            return OCRRunResult(backend="paddleocr_mobile", lines=run_paddleocr(image_bytes, langs=langs, backend_name="paddleocr_mobile"))
         raise RuntimeError("No OCR backend is available in the current environment.")
 
     backends = [requested]
@@ -334,9 +444,22 @@ def run_ocr(
     errors: list[str] = []
     for name in backends:
         try:
-            if name == "paddleocr":
-                return OCRRunResult(backend="paddleocr", lines=run_paddleocr(image_bytes, langs=langs))
+            if name in PADDLE_BACKEND_ALIASES:
+                reason = _paddle_runtime_disabled_reason()
+                if reason:
+                    errors.append(f"{name}: {reason}")
+                    continue
+                normalized = PADDLE_BACKEND_ALIASES[name]
+                return OCRRunResult(backend=normalized, lines=run_paddleocr(image_bytes, langs=langs, backend_name=normalized))
+            if name == "rapidocr":
+                if not ocr_backend_is_available("rapidocr"):
+                    errors.append(f"{name}: backend unavailable")
+                    continue
+                return OCRRunResult(backend="rapidocr", lines=run_rapidocr(image_bytes, langs=langs))
             if name == "easyocr":
+                if not ocr_backend_is_available("easyocr"):
+                    errors.append(f"{name}: backend unavailable")
+                    continue
                 return OCRRunResult(backend="easyocr", lines=run_easyocr(image_bytes, langs=langs))
             errors.append(f"{name}: unsupported backend")
         except Exception as exc:

@@ -12,7 +12,7 @@ router = APIRouter(prefix="/llm", tags=["llm"])
 @router.post("/enrich-items", response_model=LLMItemEnrichmentResponse)
 def enrich_items(payload: LLMItemEnrichmentRequest) -> LLMItemEnrichmentResponse:
     try:
-        provider_label, model, items = enrich_items_with_llm(
+        provider_label, model, items, retrieval_rows = enrich_items_with_llm(
             payload.items,
             user_context=payload.user_context,
             top_k=payload.top_k,
@@ -23,6 +23,7 @@ def enrich_items(payload: LLMItemEnrichmentRequest) -> LLMItemEnrichmentResponse
             n_items_requested=len(payload.items),
             n_items_returned=len(items),
             items=items,
+            retrieval_rows=retrieval_rows,
         )
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
