@@ -46,6 +46,9 @@ class Settings(BaseModel):
     rag_enabled: bool = os.getenv("PICKMEAL_RAG_ENABLED", "true").strip().lower() in {"1", "true", "yes", "on"}
     rag_top_k: int = int(os.getenv("PICKMEAL_RAG_TOP_K", "4"))
     rag_dataset_path: str = os.getenv("PICKMEAL_RAG_DATASET_PATH", "data/processed/gold/menu_gold_all_batches.csv")
+    storage_seed_enabled: bool = os.getenv("PICKMEAL_STORAGE_SEED_ENABLED", "true").strip().lower() in {"1", "true", "yes", "on"}
+    storage_seed_dataset_path: str = os.getenv("PICKMEAL_STORAGE_SEED_DATASET_PATH", "data/processed/gold/menu_gold_all_batches.csv")
+    storage_seed_min_embeddings: int = int(os.getenv("PICKMEAL_STORAGE_SEED_MIN_EMBEDDINGS", "1200"))
     parser_module: str = os.getenv(
         "PICKMEAL_PARSER_MODULE",
         "pickmeal_ml.models.menu_structuring_cascade_v1",

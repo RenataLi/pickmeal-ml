@@ -4,12 +4,15 @@ import json
 import re
 import uuid
 from functools import lru_cache
+from pathlib import Path
 from typing import Any
 
 import numpy as np
+import pandas as pd
 from sklearn.feature_extraction.text import HashingVectorizer
 
 from ..config import get_settings
+from .enrichment_service import derive_allergens, derive_diet_flags, detect_ingredient_hints, estimate_calories
 from ..schemas import (
     CombinationRow,
     LineRolePrediction,
@@ -131,6 +134,242 @@ def _json_dumps(payload: Any) -> str:
     return json.dumps(payload, ensure_ascii=False)
 
 
+def _storage_seed_path() -> Path:
+    settings = get_settings()
+    return settings.project_root / settings.storage_seed_dataset_path
+
+
+def _clean_seed_text(value: Any) -> str:
+    if value is None:
+        return ""
+    text = str(value).strip()
+    if not text or text.lower() == "nan":
+        return ""
+    return text
+
+
+def _parse_seed_list(value: Any) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    text = str(value).strip()
+    if not text or text.lower() == "nan":
+        return []
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, list):
+            return [str(item).strip() for item in parsed if str(item).strip()]
+    except Exception:
+        pass
+    return [text]
+
+
+def _safe_float(value: Any) -> float | None:
+    if value is None:
+        return None
+    try:
+        text = str(value).strip()
+        if not text or text.lower() == "nan":
+            return None
+        return float(value)
+    except Exception:
+        return None
+
+
+def _seed_session_id(menu_id: str) -> uuid.UUID:
+    return uuid.uuid5(uuid.NAMESPACE_URL, f"pickmeal:gold-seed:{menu_id}")
+
+
+def _build_seed_item(row: dict[str, Any], fallback_local_id: str) -> ParsedItem | None:
+    dish_name = _clean_seed_text(row.get("dish_name"))
+    if not dish_name:
+        return None
+
+    item = ParsedItem(
+        local_id=_clean_seed_text(row.get("item_id")) or fallback_local_id,
+        dish_name=dish_name,
+        description=_clean_seed_text(row.get("description")) or None,
+        section=_clean_seed_text(row.get("section")) or None,
+        price_value=_safe_float(row.get("price_value")),
+        price_currency=_clean_seed_text(row.get("currency")) or None,
+        price_text=_clean_seed_text(row.get("price_text")) or None,
+        ingredient_hints=_parse_seed_list(row.get("explicit_ingredients")),
+        explicit_allergens=_parse_seed_list(row.get("explicit_allergens")),
+        parser_confidence=_safe_float(row.get("confidence")),
+    )
+
+    ingredients = sorted(set(item.ingredient_hints) | set(detect_ingredient_hints(item)))
+    allergens = derive_allergens(item.explicit_allergens, ingredients)
+    diet_flags = derive_diet_flags(ingredients, allergens)
+    calories_low, calories_mid, calories_high, nutrition_confidence = estimate_calories(item, ingredients)
+
+    return item.model_copy(
+        update={
+            "ingredient_hints": ingredients,
+            "explicit_allergens": allergens,
+            "diet_flags": diet_flags,
+            "calories_low": calories_low,
+            "calories_mid": calories_mid,
+            "calories_high": calories_high,
+            "nutrition_confidence": round(nutrition_confidence, 3),
+            "enrichment_notes": ["seeded from reviewed gold menu annotations"],
+        }
+    )
+
+
+def _seed_storage_from_gold(cur, vector_backend: str) -> None:
+    settings = get_settings()
+    if not settings.storage_seed_enabled:
+        return
+
+    dataset_path = _storage_seed_path()
+    if not dataset_path.exists():
+        return
+
+    cur.execute("SELECT COUNT(*) FROM dish_embeddings")
+    current_embeddings = int(cur.fetchone()[0])
+    cur.execute("SELECT COUNT(*) FROM menu_sessions WHERE source_kind = 'gold_dataset_seed'")
+    seeded_sessions = int(cur.fetchone()[0])
+
+    if seeded_sessions > 0 and current_embeddings >= int(settings.storage_seed_min_embeddings):
+        return
+
+    if seeded_sessions > 0:
+        cur.execute("DELETE FROM menu_sessions WHERE source_kind = 'gold_dataset_seed'")
+
+    df = pd.read_csv(dataset_path)
+    if df.empty:
+        return
+
+    for menu_id, group in df.groupby("menu_id", dropna=False):
+        menu_key = _clean_seed_text(menu_id)
+        if not menu_key:
+            continue
+        session_id = _seed_session_id(menu_key)
+        items: list[ParsedItem] = []
+        for idx, row in enumerate(group.to_dict(orient="records"), start=1):
+            item = _build_seed_item(row, fallback_local_id=f"{menu_key}_item_{idx:03d}")
+            if item is not None:
+                items.append(item)
+        if not items:
+            continue
+
+        cur.execute(
+            """
+            INSERT INTO menu_sessions (
+                session_id,
+                source_kind,
+                ocr_backend,
+                parser_module,
+                n_lines,
+                n_items,
+                raw_ocr_lines,
+                line_roles
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb)
+            """,
+            (
+                session_id,
+                "gold_dataset_seed",
+                "gold_dataset",
+                "gold_dataset_seed",
+                0,
+                len(items),
+                "[]",
+                "[]",
+            ),
+        )
+
+        for item in items:
+            cur.execute(
+                """
+                INSERT INTO parsed_items (
+                    session_id,
+                    local_id,
+                    dish_name,
+                    description,
+                    section,
+                    price_value,
+                    price_currency,
+                    price_text,
+                    ingredient_hints,
+                    explicit_allergens,
+                    diet_flags,
+                    calories_low,
+                    calories_mid,
+                    calories_high,
+                    nutrition_confidence,
+                    enrichment_notes,
+                    parser_confidence
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, %s::jsonb, %s, %s, %s, %s, %s::jsonb, %s)
+                """,
+                (
+                    session_id,
+                    item.local_id,
+                    item.dish_name,
+                    item.description,
+                    item.section,
+                    item.price_value,
+                    item.price_currency,
+                    item.price_text,
+                    _json_dumps(item.ingredient_hints),
+                    _json_dumps(item.explicit_allergens),
+                    _json_dumps(item.diet_flags),
+                    item.calories_low,
+                    item.calories_mid,
+                    item.calories_high,
+                    item.nutrition_confidence,
+                    _json_dumps(item.enrichment_notes),
+                    item.parser_confidence,
+                ),
+            )
+
+            text_value = _item_embedding_text(item)
+            if not text_value:
+                continue
+
+            embedding = _embed_text(text_value)
+            cur.execute(
+                """
+                INSERT INTO dish_embeddings (
+                    session_id,
+                    local_id,
+                    text_value,
+                    embedding_model,
+                    embedding_json,
+                    metadata
+                )
+                VALUES (%s, %s, %s, %s, %s::jsonb, %s::jsonb)
+                """,
+                (
+                    session_id,
+                    item.local_id,
+                    text_value,
+                    settings.embedding_model_name,
+                    _json_dumps(embedding),
+                    _json_dumps(
+                        {
+                            "dish_name": item.dish_name,
+                            "section": item.section,
+                            "price_value": item.price_value,
+                            "seed_source": "gold_dataset",
+                        }
+                    ),
+                ),
+            )
+            if vector_backend == "pgvector":
+                cur.execute(
+                    """
+                    UPDATE dish_embeddings
+                    SET embedding = %s::vector
+                    WHERE session_id = %s AND local_id = %s
+                    """,
+                    (_vector_literal(embedding), session_id, item.local_id),
+                )
+
+
 def initialize_storage(force: bool = False) -> None:
     settings = get_settings()
     _RUNTIME_STATE["enabled"] = _storage_enabled()
@@ -230,6 +469,7 @@ def initialize_storage(force: bool = False) -> None:
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_parsed_items_session_id ON parsed_items (session_id)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_dish_embeddings_session_id ON dish_embeddings (session_id)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_recommendation_runs_session_id ON recommendation_runs (session_id)")
+                _seed_storage_from_gold(cur, vector_backend)
         _RUNTIME_STATE["initialized"] = True
         _RUNTIME_STATE["vector_backend"] = vector_backend
         _RUNTIME_STATE["last_error"] = None
@@ -542,6 +782,7 @@ def load_storage_stats() -> dict[str, Any]:
         "embedding_dimensions": settings.embedding_dimensions,
         "vector_backend": _RUNTIME_STATE["vector_backend"],
         "row_counts": {},
+        "source_kind_counts": {},
         "last_error": _RUNTIME_STATE["last_error"],
     }
     if not settings.database_url or not _RUNTIME_STATE["initialized"]:
@@ -559,7 +800,17 @@ def load_storage_stats() -> dict[str, Any]:
                 for table_name in ["menu_sessions", "parsed_items", "dish_embeddings", "recommendation_runs"]:
                     cur.execute(f"SELECT COUNT(*) FROM {table_name}")
                     row_counts[table_name] = int(cur.fetchone()[0])
+                cur.execute(
+                    """
+                    SELECT source_kind, COUNT(*)
+                    FROM menu_sessions
+                    GROUP BY source_kind
+                    ORDER BY source_kind
+                    """
+                )
+                source_kind_counts = {str(source_kind): int(count) for source_kind, count in cur.fetchall()}
         payload["row_counts"] = row_counts
+        payload["source_kind_counts"] = source_kind_counts
         payload["last_error"] = None
     except Exception as exc:
         payload["last_error"] = str(exc)

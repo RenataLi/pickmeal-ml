@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import io
 import json
 import os
@@ -104,6 +105,33 @@ def image_to_upload_bytes(image: Image.Image, original_name: str) -> tuple[bytes
     return buf.getvalue(), mime
 
 
+def fit_image_for_display(image: Image.Image, max_height: int = 760, max_width: int = 1100) -> Image.Image:
+    canvas = image.copy()
+    if canvas.height <= max_height and canvas.width <= max_width:
+        return canvas
+    canvas.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+    return canvas
+
+
+def render_preview_frame(image: Image.Image, caption: str | None = None, frame_height: int = 720):
+    prepared = fit_image_for_display(image, max_height=frame_height, max_width=1200)
+    buf = io.BytesIO()
+    prepared.save(buf, format="PNG")
+    encoded = base64.b64encode(buf.getvalue()).decode("utf-8")
+    caption_html = f"<div class='pm-preview-caption'>{caption}</div>" if caption else ""
+    st.markdown(
+        f"""
+        <div class="pm-preview-frame">
+            <div class="pm-preview-shell" style="height:{frame_height}px;">
+                <img src="data:image/png;base64,{encoded}" alt="Menu preview" />
+            </div>
+            {caption_html}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def init_state():
     defaults = {
         "api_url_input": API_URL,
@@ -176,6 +204,83 @@ def fetch_api_json(api_url: str, path: str, method: str = "GET", json_payload: d
     except Exception:
         return None
     return None
+
+
+def load_parser_metric_rows() -> pd.DataFrame:
+    parser_dirs = [
+        ("Baseline v1", "parser_baseline"),
+        ("Baseline v2", "parser_baseline_v2"),
+        ("Baseline v2 expanded", "parser_baseline_v2_expanded"),
+        ("Baseline v3 layout", "parser_baseline_v3_layout_expanded"),
+        ("Cascade v1 expanded", "parser_cascade_v1_expanded"),
+        ("Line-role hybrid v2", "parser_line_role_hybrid_v2_expanded"),
+        ("Line-role v3", "parser_line_role_v3"),
+        ("Line-role v3 layout", "parser_line_role_v3_layout"),
+        ("Hybrid merge v31", "parser_hybrid_merge_v31"),
+        ("Hybrid v4 layout", "parser_hybrid_v4_layout"),
+    ]
+    rows: list[dict] = []
+    for label, rel_dir in parser_dirs:
+        for split in ["valid", "test"]:
+            path = PROJECT_ROOT / "reports" / rel_dir / f"parser_metrics_{split}.json"
+            metrics = read_json_if_exists(path) or {}
+            if metrics:
+                rows.append(
+                    {
+                        "model": label,
+                        "split": split,
+                        "metrics_dir": rel_dir,
+                        **metrics,
+                    }
+                )
+    return pd.DataFrame(rows)
+
+
+def load_line_role_metric_rows() -> pd.DataFrame:
+    rows = []
+    candidates = [
+        ("Line-role baseline", "line_role_baseline"),
+        ("Line-role expanded v1", "line_role_expanded_v1"),
+        ("Line-role expanded SGD v1", "line_role_expanded_sgd_v1"),
+    ]
+    for label, rel_dir in candidates:
+        metrics = read_json_if_exists(PROJECT_ROOT / "reports" / rel_dir / "line_role_metrics.json") or {}
+        if metrics:
+            rows.append({"model": label, "metrics_dir": rel_dir, **metrics})
+    return pd.DataFrame(rows)
+
+
+def load_ocr_metric_rows() -> pd.DataFrame:
+    benchmark_labels = {
+        "ocr_backend_benchmark_v1": "OCR benchmark v1",
+        "ocr_backend_benchmark_v2": "OCR benchmark v2",
+        "ocr_backend_benchmark_v3": "OCR benchmark v3",
+        "ocr_backend_benchmark_cascade_v1": "OCR benchmark cascade v1",
+    }
+    rows: list[dict] = []
+    for rel_dir, run_label in benchmark_labels.items():
+        metrics = read_json_if_exists(PROJECT_ROOT / "reports" / rel_dir / "ocr_backend_metrics.json") or []
+        for row in metrics:
+            rows.append({"benchmark_run": run_label, "metrics_dir": rel_dir, **row})
+    return pd.DataFrame(rows)
+
+
+def normalize_metrics_dir(value: str | None) -> str:
+    if not value:
+        return ""
+    return Path(str(value)).name
+
+
+def merge_metric_frames(*frames: pd.DataFrame, subset: list[str] | None = None) -> pd.DataFrame:
+    usable_frames = [frame.copy() for frame in frames if isinstance(frame, pd.DataFrame) and not frame.empty]
+    if not usable_frames:
+        return pd.DataFrame()
+    merged = pd.concat(usable_frames, ignore_index=True)
+    if "metrics_dir" in merged.columns:
+        merged["metrics_dir"] = merged["metrics_dir"].map(normalize_metrics_dir)
+    if subset:
+        merged = merged.drop_duplicates(subset=subset, keep="first")
+    return merged
 
 
 def inject_styles():
@@ -300,6 +405,56 @@ def inject_styles():
             border: 1px solid rgba(18, 32, 39, 0.10);
             overflow: hidden;
             box-shadow: 0 18px 34px rgba(43, 34, 22, 0.10);
+        }
+
+        div[data-testid="stImage"] {
+            background: rgba(255,255,255,0.76);
+            border: 1px solid rgba(18, 32, 39, 0.10);
+            border-radius: 26px;
+            padding: 12px;
+            box-shadow: 0 18px 34px rgba(43, 34, 22, 0.10);
+        }
+
+        div[data-testid="stImage"] img {
+            border-radius: 18px;
+        }
+
+        div[data-testid="stImage"] [data-testid="stCaptionContainer"] {
+            padding-top: 0.35rem;
+        }
+
+        .pm-preview-frame {
+            background: rgba(255,255,255,0.78);
+            border: 1px solid rgba(18, 32, 39, 0.10);
+            border-radius: 26px;
+            padding: 12px;
+            box-shadow: 0 18px 34px rgba(43, 34, 22, 0.10);
+        }
+
+        .pm-preview-shell {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border-radius: 18px;
+            background:
+                linear-gradient(180deg, rgba(255,255,255,0.65) 0%, rgba(248, 242, 235, 0.82) 100%);
+            border: 1px solid rgba(18, 32, 39, 0.08);
+        }
+
+        .pm-preview-shell img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 14px;
+            box-shadow: 0 10px 24px rgba(43, 34, 22, 0.10);
+        }
+
+        .pm-preview-caption {
+            padding-top: 0.45rem;
+            color: var(--pm-muted);
+            font-size: 0.92rem;
         }
 
         .pm-hero {
@@ -730,33 +885,66 @@ def overlay_ocr_boxes(image: Image.Image, ocr_df: pd.DataFrame) -> Image.Image:
 
 def render_dashboard(api_url: str):
     st.subheader("Model dashboard")
+    parser_stats = fetch_api_json(api_url, "/stats/parser")
+    api_parser_df = pd.DataFrame((parser_stats or {}).get("comparison_rows", []))
+    local_parser_df = load_parser_metric_rows()
+    parser_df = merge_metric_frames(api_parser_df, local_parser_df, subset=["metrics_dir", "split"])
+    active_metrics_dir = normalize_metrics_dir(parser_stats.get("active_metrics_dir")) if isinstance(parser_stats, dict) else ""
 
-    parser_valid = read_json_if_exists(PROJECT_ROOT / "reports" / "parser_cascade_v1_expanded" / "parser_metrics_valid.json") or {}
-    parser_test = read_json_if_exists(PROJECT_ROOT / "reports" / "parser_cascade_v1_expanded" / "parser_metrics_test.json") or {}
-    line_role_baseline = read_json_if_exists(PROJECT_ROOT / "reports" / "line_role_baseline" / "line_role_metrics.json") or {}
-    line_role_expanded = read_json_if_exists(PROJECT_ROOT / "reports" / "line_role_expanded_sgd_v1" / "line_role_metrics.json") or {}
-    ocr_metrics = read_json_if_exists(PROJECT_ROOT / "reports" / "ocr_backend_benchmark_cascade_v1" / "ocr_backend_metrics.json") or []
-    ocr_df = pd.DataFrame(ocr_metrics)
-    paddle_row = ocr_df.loc[ocr_df["backend"] == "paddleocr"].iloc[0].to_dict() if not ocr_df.empty and (ocr_df["backend"] == "paddleocr").any() else {}
+    line_role_df = load_line_role_metric_rows()
+    ocr_df = load_ocr_metric_rows()
+
+    parser_test_df = pd.DataFrame()
+    active_parser_row = {}
+    best_parser_row = {}
+    best_ocr_row = {}
+    best_line_role_row = {}
+
+    if not parser_df.empty:
+        parser_test_df = parser_df.loc[parser_df["split"] == "test"].copy()
+        parser_test_df = parser_test_df.sort_values(by="item_f1", ascending=False, na_position="last")
+        if active_metrics_dir and "metrics_dir" in parser_test_df.columns:
+            active_rows = parser_test_df.loc[parser_test_df["metrics_dir"] == active_metrics_dir]
+            if not active_rows.empty:
+                active_parser_row = active_rows.iloc[0].to_dict()
+        if not parser_test_df.empty:
+            best_parser_row = parser_test_df.iloc[0].to_dict()
+
+    if not ocr_df.empty:
+        ocr_df = ocr_df.sort_values(by="item_f1", ascending=False, na_position="last")
+        best_ocr_row = ocr_df.iloc[0].to_dict()
+
+    if not line_role_df.empty:
+        line_role_df = line_role_df.sort_values(by="macro_f1", ascending=False, na_position="last")
+        best_line_role_row = line_role_df.iloc[0].to_dict()
 
     c1, c2, c3, c4 = st.columns(4)
     with c1:
-        metric_card("Active parser test F1", f"{parser_test.get('item_f1', '—')}", "Current service parser on expanded test split")
+        metric_card(
+            "Active parser test F1",
+            f"{active_parser_row.get('item_f1', '—')}",
+            f"{active_parser_row.get('model', 'Current parser')} on the test split",
+        )
     with c2:
-        metric_card("PaddleOCR item F1", f"{paddle_row.get('item_f1', '—')}", "End-to-end OCR plus parser benchmark")
+        metric_card(
+            "Best parser test F1",
+            f"{best_parser_row.get('item_f1', '—')}",
+            f"{best_parser_row.get('model', 'No parser comparison loaded')}",
+        )
     with c3:
-        metric_card("PaddleOCR price acc", f"{paddle_row.get('price_accuracy', '—')}", "Price extraction accuracy on benchmark pages")
+        metric_card(
+            "Best OCR item F1",
+            f"{best_ocr_row.get('item_f1', '—')}",
+            f"{best_ocr_row.get('backend', '—')} · {best_ocr_row.get('benchmark_run', '—')}",
+        )
     with c4:
-        metric_card("Line-role macro F1", f"{line_role_expanded.get('macro_f1', '—')}", "Expanded OCR line classifier")
+        metric_card(
+            "Best line-role macro F1",
+            f"{best_line_role_row.get('macro_f1', '—')}",
+            f"{best_line_role_row.get('model', 'No line-role metrics loaded')}",
+        )
 
-    rows = []
-    if parser_valid:
-        rows.append({"model": "Cascade parser v1", "split": "valid", **parser_valid})
-    if parser_test:
-        rows.append({"model": "Cascade parser v1", "split": "test", **parser_test})
-
-    if rows:
-        comp_df = pd.DataFrame(rows)
+    if not parser_df.empty:
         metric_cols = [
             c
             for c in [
@@ -766,35 +954,45 @@ def render_dashboard(api_url: str):
                 "section_accuracy",
                 "price_accuracy",
                 "description_exact_match",
+                "n_menus",
             ]
-            if c in comp_df.columns
+            if c in parser_df.columns
         ]
         st.markdown("### Parser comparison")
-        show_dataframe(comp_df[["model", "split"] + metric_cols], height=260)
-        for metric in metric_cols:
-            plot_df = comp_df[["model", "split", metric]].copy()
-            plot_df["label"] = plot_df["model"] + " · " + plot_df["split"]
-            st.markdown(f"**{metric}**")
-            st.bar_chart(plot_df.set_index("label")[[metric]])
+        parser_table = parser_df.sort_values(by=["split", "item_f1"], ascending=[True, False], na_position="last")
+        show_dataframe(parser_table[["model", "split"] + metric_cols], height=280)
 
-    line_role_rows = []
-    if line_role_baseline:
-        line_role_rows.append({"model": "Line-role baseline", **line_role_baseline})
-    if line_role_expanded:
-        line_role_rows.append({"model": "Line-role expanded", **line_role_expanded})
-    if line_role_rows:
-        line_role_df = pd.DataFrame(line_role_rows)
-        cols = [c for c in ["model", "accuracy", "macro_f1", "weighted_f1", "n_train_rows", "n_test_rows"] if c in line_role_df.columns]
+        if not parser_test_df.empty:
+            chart_df = parser_test_df[["model", "item_f1", "price_accuracy", "section_accuracy"]].copy()
+            chart_df = chart_df.set_index("model")
+            st.bar_chart(chart_df)
+
+    if not line_role_df.empty:
         st.markdown("### Line-role model comparison")
-        show_dataframe(line_role_df[cols], height=180)
+        cols = [c for c in ["model", "accuracy", "macro_f1", "weighted_f1", "n_train_rows", "n_test_rows"] if c in line_role_df.columns]
+        show_dataframe(line_role_df[cols], height=200)
 
     if not ocr_df.empty:
-        st.markdown("### OCR backend benchmark")
-        cols = [c for c in ["backend", "item_f1", "item_precision", "item_recall", "price_accuracy", "avg_ocr_lines", "avg_ocr_confidence"] if c in ocr_df.columns]
-        show_dataframe(ocr_df[cols], height=180)
-        chart_df = ocr_df[["backend", "item_f1", "price_accuracy"]].copy()
-        chart_df = chart_df.set_index("backend")
-        st.bar_chart(chart_df)
+        st.markdown("### OCR benchmark comparison")
+        cols = [
+            c
+            for c in [
+                "benchmark_run",
+                "backend",
+                "item_f1",
+                "item_precision",
+                "item_recall",
+                "price_accuracy",
+                "section_accuracy",
+                "avg_ocr_lines",
+                "avg_ocr_confidence",
+            ]
+            if c in ocr_df.columns
+        ]
+        show_dataframe(ocr_df[cols], height=220)
+        ocr_chart_df = ocr_df[["benchmark_run", "backend", "item_f1", "price_accuracy"]].copy()
+        ocr_chart_df["label"] = ocr_chart_df["benchmark_run"] + " · " + ocr_chart_df["backend"]
+        st.bar_chart(ocr_chart_df.set_index("label")[["item_f1", "price_accuracy"]])
 
     storage_stats = fetch_api_json(api_url, "/stats/storage")
     if isinstance(storage_stats, dict):
@@ -817,6 +1015,7 @@ def render_dashboard(api_url: str):
                     "embedding_model": storage_stats.get("embedding_model_name"),
                     "embedding_dimensions": storage_stats.get("embedding_dimensions"),
                     "recommendation_runs": storage_stats.get("row_counts", {}).get("recommendation_runs", 0),
+                    "source_kind_counts": json.dumps(storage_stats.get("source_kind_counts") or {}, ensure_ascii=False),
                     "last_error": storage_stats.get("last_error") or "",
                 }
             ]
@@ -931,7 +1130,7 @@ def render_how_it_works():
 
 def render_similar_dishes_lookup(api_url: str):
     st.markdown("<p class='pm-section-title'>Similar parsed dishes in local storage</p>", unsafe_allow_html=True)
-    st.caption("Search across dishes persisted from previous parsing sessions in PostgreSQL with pgvector. Very noisy OCR sessions can still reduce retrieval quality.")
+    st.caption("Search across dishes persisted from previous parsing sessions and the gold-seeded menu corpus stored in PostgreSQL with pgvector.")
     with st.form("similar_dishes_form"):
         query_text = st.text_input("Similarity query", value="margherita pizza", key="similarity_query_input")
         top_k = st.slider("Top similar dishes", min_value=3, max_value=10, value=5, key="similarity_top_k_slider")
@@ -1014,7 +1213,7 @@ with home_tab:
         rotated_preview = rotate_image(preview_image, rotation_deg)
         with preview_col:
             st.markdown("<p class='pm-section-title'>Preview</p>", unsafe_allow_html=True)
-            show_image(rotated_preview, caption=f"Menu image ({rotation_deg}°)")
+            render_preview_frame(rotated_preview, caption=f"Menu image ({rotation_deg}°)")
         prepared_upload_bytes, prepared_upload_mime = image_to_upload_bytes(rotated_preview, uploaded.name)
         upload_signature = (uploaded.name, len(image_bytes), langs, ocr_backend, rotation_deg)
 

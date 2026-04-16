@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from itertools import combinations
+from functools import lru_cache
 from typing import Iterable
 
 import numpy as np
@@ -34,19 +35,26 @@ def _query_text(request: RecommendRequest) -> str:
 
 
 def _try_sentence_transformer(texts: list[str], query_text: str) -> EngineResult | None:
+    model = _load_sentence_transformer_model()
+    matrix = model.encode(texts, normalize_embeddings=True)
+    query_vec = model.encode([query_text], normalize_embeddings=True)
+    scores = cosine_similarity(query_vec, matrix)[0]
+    return EngineResult(engine_used="sentence_transformer", scores=np.asarray(scores))
+
+
+@lru_cache(maxsize=1)
+def _load_sentence_transformer_model():
     try:
         from sentence_transformers import SentenceTransformer
-    except Exception:
-        return None
+    except Exception as exc:
+        raise RuntimeError("sentence-transformers is not installed in the current environment.") from exc
 
     try:
-        model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2", local_files_only=True)
-        matrix = model.encode(texts, normalize_embeddings=True)
-        query_vec = model.encode([query_text], normalize_embeddings=True)
-        scores = cosine_similarity(query_vec, matrix)[0]
-        return EngineResult(engine_used="sentence_transformer", scores=np.asarray(scores))
-    except Exception:
-        return None
+        return SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+    except Exception as exc:
+        raise RuntimeError(
+            "Could not load the all-MiniLM-L6-v2 sentence-transformer model. Check internet access for the first download or make sure the model is cached locally."
+        ) from exc
 
 
 def _tfidf_scores(texts: list[str], query_text: str) -> EngineResult:
@@ -63,11 +71,14 @@ def _semantic_scores(texts: list[str], query_text: str, engine: str) -> EngineRe
         return EngineResult(engine_used="none", scores=np.zeros(len(texts), dtype=float))
 
     if engine in {"auto", "sentence_transformer"}:
-        st_result = _try_sentence_transformer(texts, query_text)
+        try:
+            st_result = _try_sentence_transformer(texts, query_text)
+        except RuntimeError:
+            st_result = None
+            if engine == "sentence_transformer":
+                raise
         if st_result is not None:
             return st_result
-        if engine == "sentence_transformer":
-            raise RuntimeError("sentence-transformers is not installed.")
 
     return _tfidf_scores(texts, query_text)
 
