@@ -10,8 +10,42 @@ import requests
 import streamlit as st
 from PIL import Image, ImageDraw, ImageOps
 
-API_URL = os.getenv("PICKMEAL_API_URL", "http://localhost:8000")
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+def running_in_docker() -> bool:
+    return Path("/.dockerenv").exists()
+
+
+def normalize_api_url(value: str | None) -> str:
+    candidate = (value or "").strip().rstrip("/")
+    if not candidate:
+        return "http://api:8000" if running_in_docker() else "http://127.0.0.1:8000"
+    if not running_in_docker() and candidate in {"http://api:8000", "http://api"}:
+        return "http://127.0.0.1:8000"
+    return candidate
+
+
+def resolve_api_url() -> str:
+    if running_in_docker():
+        return normalize_api_url(
+            os.getenv("PICKMEAL_API_URL")
+            or os.getenv("PICKMEAL_API_URL_DOCKER")
+            or "http://api:8000"
+        )
+    return normalize_api_url(os.getenv("PICKMEAL_API_URL") or "http://127.0.0.1:8000")
+
+
+API_URL = resolve_api_url()
+DEFAULT_OCR_BACKEND = (os.getenv("PICKMEAL_OCR_BACKEND") or "easyocr").strip().lower()
+OCR_BACKEND_OPTIONS = ["rapidocr", "easyocr", "paddleocr_mobile", "paddleocr_quality", "auto"]
+OCR_BACKEND_LABELS = {
+    "rapidocr": "rapidocr — stable ONNX OCR for Docker CPU",
+    "easyocr": "easyocr — fastest local baseline",
+    "paddleocr_mobile": "paddleocr_mobile — better quality / lighter than server det",
+    "paddleocr_quality": "paddleocr_quality — heavier quality mode",
+    "auto": "auto — choose automatically",
+}
 
 
 def button_stretch(label: str, **kwargs):
@@ -72,6 +106,7 @@ def image_to_upload_bytes(image: Image.Image, original_name: str) -> tuple[bytes
 
 def init_state():
     defaults = {
+        "api_url_input": API_URL,
         "parsed_payload": None,
         "parse_error": None,
         "recommend_payload": None,
@@ -83,6 +118,7 @@ def init_state():
     for key, value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
+    st.session_state["api_url_input"] = normalize_api_url(st.session_state.get("api_url_input"))
 
 
 def read_json_if_exists(path: Path) -> dict | None:
@@ -101,6 +137,32 @@ def read_csv_if_exists(path: Path) -> pd.DataFrame:
         return pd.read_csv(path)
     except Exception:
         return pd.DataFrame()
+
+
+def format_api_error(error) -> str:
+    if error is None:
+        return ""
+    if isinstance(error, dict):
+        detail = error.get("detail")
+        if isinstance(detail, list):
+            parts: list[str] = []
+            for item in detail:
+                if isinstance(item, dict):
+                    loc = item.get("loc")
+                    msg = item.get("msg")
+                    if loc and msg:
+                        parts.append(f"{'.'.join(str(x) for x in loc)}: {msg}")
+                    elif msg:
+                        parts.append(str(msg))
+                    else:
+                        parts.append(str(item))
+                else:
+                    parts.append(str(item))
+            return " ".join(part for part in parts if part).strip()
+        if detail:
+            return str(detail)
+        return json.dumps(error, ensure_ascii=False)
+    return str(error)
 
 
 def fetch_api_json(api_url: str, path: str, method: str = "GET", json_payload: dict | None = None, timeout: int = 30) -> dict | list | None:
@@ -741,16 +803,17 @@ def render_dashboard(api_url: str):
         with s1:
             metric_card("Storage enabled", "yes" if storage_stats.get("enabled") else "no", "Database-backed persistence")
         with s2:
-            metric_card("Storage ready", "yes" if storage_stats.get("initialized") else "no", "Postgres + pgvector initialization")
+            metric_card("Storage ready", "yes" if storage_stats.get("initialized") else "no", "Postgres-backed persistence initialized")
         with s3:
             metric_card("Stored sessions", str(storage_stats.get("row_counts", {}).get("menu_sessions", "—")), "Persisted parse sessions")
         with s4:
-            metric_card("Stored embeddings", str(storage_stats.get("row_counts", {}).get("dish_embeddings", "—")), "Vectors for parsed dishes")
+            metric_card("Stored embeddings", str(storage_stats.get("row_counts", {}).get("dish_embeddings", "—")), "Similarity index entries")
 
         stats_rows = pd.DataFrame(
             [
                 {
                     "database_url_present": storage_stats.get("database_url_present"),
+                    "vector_backend": storage_stats.get("vector_backend") or "",
                     "embedding_model": storage_stats.get("embedding_model_name"),
                     "embedding_dimensions": storage_stats.get("embedding_dimensions"),
                     "recommendation_runs": storage_stats.get("row_counts", {}).get("recommendation_runs", 0),
@@ -783,6 +846,30 @@ def render_dashboard(api_url: str):
             ]
         )
         show_dataframe(llm_df, height=120)
+
+    rag_stats = fetch_api_json(api_url, "/stats/rag")
+    if isinstance(rag_stats, dict):
+        st.markdown("### RAG knowledge base")
+        r1, r2, r3, r4 = st.columns(4)
+        with r1:
+            metric_card("RAG enabled", "yes" if rag_stats.get("enabled") else "no", "Grounded retrieval layer")
+        with r2:
+            metric_card("RAG ready", "yes" if rag_stats.get("initialized") else "no", "Knowledge base seeded in PostgreSQL")
+        with r3:
+            metric_card("Knowledge docs", str(rag_stats.get("document_count") or 0), "Retrieved evidence corpus")
+        with r4:
+            metric_card("RAG top-k", str(rag_stats.get("top_k") or "—"), "Evidence chunks per item")
+        rag_df = pd.DataFrame(
+            [
+                {
+                    "vector_backend": rag_stats.get("vector_backend") or "",
+                    "dataset_path": rag_stats.get("dataset_path") or "",
+                    "source_type_counts": json.dumps(rag_stats.get("source_type_counts") or {}, ensure_ascii=False),
+                    "last_error": rag_stats.get("last_error") or "",
+                }
+            ]
+        )
+        show_dataframe(rag_df, height=120)
 
 
 def render_dataset_tab():
@@ -843,8 +930,8 @@ def render_how_it_works():
 
 
 def render_similar_dishes_lookup(api_url: str):
-    st.markdown("<p class='pm-section-title'>Similar dishes in storage</p>", unsafe_allow_html=True)
-    st.caption("Search across persisted dish embeddings stored in PostgreSQL with pgvector.")
+    st.markdown("<p class='pm-section-title'>Similar parsed dishes in local storage</p>", unsafe_allow_html=True)
+    st.caption("Search across dishes persisted from previous parsing sessions in PostgreSQL with pgvector. Very noisy OCR sessions can still reduce retrieval quality.")
     with st.form("similar_dishes_form"):
         query_text = st.text_input("Similarity query", value="margherita pizza", key="similarity_query_input")
         top_k = st.slider("Top similar dishes", min_value=3, max_value=10, value=5, key="similarity_top_k_slider")
@@ -890,7 +977,8 @@ st.markdown(
 
 with st.sidebar:
     st.header("Connection")
-    api_url = st.text_input("FastAPI URL", value=API_URL, key="api_url_input")
+    st.text_input("FastAPI URL", key="api_url_input")
+    api_url = normalize_api_url(st.session_state.get("api_url_input"))
     st.caption("Run the API first, then open this app.")
     show_developer_tools = st.checkbox("Developer mode", value=False, key="developer_mode_toggle")
 
@@ -904,7 +992,14 @@ with home_tab:
         st.markdown("<p class='pm-section-title'>Prepare the menu image</p>", unsafe_allow_html=True)
         uploaded = st.file_uploader("Upload a menu image", type=["jpg", "jpeg", "png", "webp"], key="menu_image_uploader")
         langs = st.text_input("OCR languages", value="en", key="ocr_langs_input")
-        ocr_backend = st.selectbox("OCR backend", options=["auto", "paddleocr", "easyocr"], index=0, key="ocr_backend_select")
+        ocr_backend_default_index = OCR_BACKEND_OPTIONS.index(DEFAULT_OCR_BACKEND) if DEFAULT_OCR_BACKEND in OCR_BACKEND_OPTIONS else 0
+        ocr_backend = st.selectbox(
+            "OCR backend",
+            options=OCR_BACKEND_OPTIONS,
+            index=ocr_backend_default_index,
+            format_func=lambda option: OCR_BACKEND_LABELS.get(option, option),
+            key="ocr_backend_select",
+        )
         rotation_deg = st.selectbox("Rotate image", options=[0, 90, 180, 270], format_func=lambda x: f"{x}°", index=0, key="rotation_deg_select")
         st.caption("Use rotation before parsing so the menu is upright for OCR and the parser.")
 
@@ -944,7 +1039,7 @@ with home_tab:
 
     if parse_clicked:
         if uploaded is None or prepared_upload_bytes is None:
-            st.warning("Please upload an image first.")
+            st.warning("Please upload a menu image before parsing.")
         else:
             files = {"file": (uploaded.name, prepared_upload_bytes, prepared_upload_mime or "image/png")}
             data = {"langs": langs, "backend": ocr_backend}
@@ -969,7 +1064,7 @@ with home_tab:
                 st.session_state["parsed_payload"] = None
 
     if st.session_state["parse_error"] is not None:
-        st.error(st.session_state["parse_error"])
+        st.error(format_api_error(st.session_state["parse_error"]))
 
     payload = st.session_state.get("parsed_payload")
     if payload:
@@ -1008,14 +1103,14 @@ with home_tab:
             st.markdown("<p class='pm-section-title'>OCR lines</p>", unsafe_allow_html=True)
             show_dataframe(ocr_df[["line_order", "text", "ocr_confidence"]] if not ocr_df.empty else ocr_df, height=360)
 
-        st.markdown("<p class='pm-section-title'>LLM dish cards</p>", unsafe_allow_html=True)
-        st.caption("Optional layer: generate concise user-facing dish cards from already parsed items.")
+        st.markdown("<p class='pm-section-title'>RAG + LLM dish cards</p>", unsafe_allow_html=True)
+        st.caption("Retrieve grounded evidence from the PickMeal knowledge base, then generate concise user-facing dish cards.")
         with st.form("llm_enrichment_form"):
             llm_col1, llm_col2 = st.columns([1.5, 1.0])
             with llm_col1:
                 llm_context = st.text_input(
-                    "LLM context",
-                    value="The user wants helpful, concise dish cards with clear allergy and calorie caveats.",
+                    "User preference note",
+                    value="Prefer lighter dishes with clear allergen notes.",
                     key="llm_context_input",
                 )
             with llm_col2:
@@ -1045,13 +1140,17 @@ with home_tab:
 
         llm_error = st.session_state.get("llm_error")
         if llm_error:
-            st.warning(llm_error)
+            st.warning(format_api_error(llm_error))
 
         llm_payload = st.session_state.get("llm_payload")
         if llm_payload:
             st.info(f"LLM provider: {llm_payload.get('provider_label')} · model: {llm_payload.get('model')}")
             llm_df = pd.DataFrame(llm_payload.get("items", []))
             render_llm_cards(llm_df)
+            retrieval_df = pd.DataFrame(llm_payload.get("retrieval_rows", []))
+            if not retrieval_df.empty:
+                with st.expander("Retrieved RAG evidence"):
+                    show_dataframe(retrieval_df, height=260)
             with st.expander("LLM item table"):
                 show_dataframe(llm_df, height=240)
 
@@ -1116,7 +1215,7 @@ with home_tab:
         recommend_payload = st.session_state.get("recommend_payload")
         recommend_error = st.session_state.get("recommend_error")
         if recommend_error:
-            st.error(recommend_error)
+            st.error(format_api_error(recommend_error))
         if recommend_payload:
             st.info(f"Engine used: {recommend_payload.get('engine_used')}")
             if recommend_payload.get("recommendation_id"):

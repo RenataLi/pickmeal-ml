@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 import requests
 
 from ..config import get_settings
-from ..schemas import ParsedItem
+from ..schemas import ParsedItem, RAGEvidenceRow
+from .rag_service import retrieve_rag_for_items
 
 
 _LLM_STATE: dict[str, str | None] = {
@@ -33,9 +35,10 @@ def load_llm_stats() -> dict[str, Any]:
     }
 
 
-def _build_prompt_items(items: list[ParsedItem]) -> list[dict[str, Any]]:
+def _build_prompt_items(items: list[ParsedItem], evidence_by_item: dict[str, list[RAGEvidenceRow]]) -> list[dict[str, Any]]:
     payload: list[dict[str, Any]] = []
     for item in items:
+        evidence_rows = evidence_by_item.get(item.local_id, [])
         payload.append(
             {
                 "local_id": item.local_id,
@@ -50,6 +53,16 @@ def _build_prompt_items(items: list[ParsedItem]) -> list[dict[str, Any]]:
                 "calories_high": item.calories_high,
                 "nutrition_confidence": item.nutrition_confidence,
                 "parser_confidence": item.parser_confidence,
+                "retrieved_evidence": [
+                    {
+                        "source_type": row.source_type,
+                        "source_id": row.source_id,
+                        "title": row.title,
+                        "similarity": row.similarity,
+                        "content_preview": row.content_preview,
+                    }
+                    for row in evidence_rows
+                ],
             }
         )
     return payload
@@ -112,25 +125,155 @@ def _request_chat_completion(messages: list[dict[str, str]]) -> str:
     return content
 
 
-def enrich_items_with_llm(items: list[ParsedItem], user_context: str | None = None, top_k: int = 5) -> tuple[str, str, list[ParsedItem]]:
+def _extract_field(row: dict[str, Any], names: list[str]) -> str | None:
+    for name in names:
+        value = row.get(name)
+        if value is None:
+            continue
+        text = str(value).strip()
+        if text:
+            return text
+    return None
+
+
+def _normalized_rows(rows: list[dict[str, Any]], items: list[ParsedItem]) -> dict[str, dict[str, Any]]:
+    row_by_id: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        local_id = _extract_field(row, ["local_id", "item_local_id", "id"])
+        if local_id:
+            row_by_id[local_id] = row
+
+    if len(row_by_id) == len(items):
+        return row_by_id
+
+    if len(rows) == len(items):
+        for item, row in zip(items, rows):
+            if isinstance(row, dict):
+                row_by_id.setdefault(item.local_id, row)
+    return row_by_id
+
+
+def _fallback_summary(item: ParsedItem, evidence_rows: list[RAGEvidenceRow]) -> str:
+    section = item.section.lower() if item.section else "menu"
+    calories = f"{int(item.calories_mid)} kcal estimate" if item.calories_mid is not None else "broad calorie estimate"
+    ingredient_text = ", ".join(item.ingredient_hints[:3]) if item.ingredient_hints else ""
+    if ingredient_text:
+        return f"{item.dish_name} from the {section} section with likely ingredients such as {ingredient_text}; {calories}."
+    if evidence_rows:
+        return f"{item.dish_name} from the {section} section, grounded with similar annotated menu examples; {calories}."
+    return f"{item.dish_name} from the {section} section with {calories}."
+
+
+def _user_goal_snippets(user_context: str | None) -> list[str]:
+    text = (user_context or "").strip().lower()
+    if not text:
+        return []
+
+    snippets: list[str] = []
+    if any(token in text for token in ["vegetarian", "vegan", "plant-based", "plant based"]):
+        snippets.append("plant-based preferences")
+    if any(token in text for token in ["gluten", "gluten-free", "gf"]):
+        snippets.append("gluten-aware filtering")
+    if any(token in text for token in ["dairy", "lactose", "milk-free", "milk free"]):
+        snippets.append("dairy-aware filtering")
+    if any(token in text for token in ["allergy", "allergen", "safe", "avoid"]):
+        snippets.append("allergen-aware filtering")
+    if any(token in text for token in ["light", "lighter", "low calorie", "not too heavy", "healthy"]):
+        snippets.append("lighter meal preferences")
+    if any(token in text for token in ["protein", "high-protein", "high protein", "gym", "post-workout"]):
+        snippets.append("protein-focused choices")
+    return snippets
+
+
+def _clean_generated_text(text: str | None, user_context: str | None) -> str | None:
+    if text is None:
+        return None
+    cleaned = " ".join(str(text).split())
+    context = (user_context or "").strip()
+    if context:
+        patterns = [
+            rf"(?i)\band the user context:\s*{re.escape(context)}\.?",
+            rf"(?i)\buser context:\s*{re.escape(context)}\.?",
+            rf"(?i)\bthe user context:\s*{re.escape(context)}\.?",
+            re.escape(context),
+        ]
+        for pattern in patterns:
+            cleaned = re.sub(pattern, "", cleaned)
+    cleaned = re.sub(r"\s{2,}", " ", cleaned)
+    cleaned = re.sub(r"\s+([,.;:])", r"\1", cleaned)
+    cleaned = cleaned.strip(" -:;,.")
+    return cleaned or None
+
+
+def _fallback_why(item: ParsedItem, user_context: str | None) -> str:
+    positive_flags = [flag.replace("_", " ") for flag, enabled in item.diet_flags.items() if enabled]
+    goal_snippets = _user_goal_snippets(user_context)
+    notes: list[str] = []
+
+    if positive_flags:
+        notes.append(f"Parsed menu signals suggest {', '.join(positive_flags[:3])}.")
+    if item.calories_mid is not None and item.calories_mid <= 450:
+        notes.append("Its calorie estimate sits on the lighter side.")
+    elif item.calories_mid is not None and item.calories_mid <= 650:
+        notes.append("Its calorie estimate stays in a moderate range.")
+    if goal_snippets:
+        notes.append(f"It aligns with {', '.join(goal_snippets[:2])}.")
+    elif item.ingredient_hints:
+        notes.append(f"It highlights likely ingredients such as {', '.join(item.ingredient_hints[:2])}.")
+
+    if notes:
+        return " ".join(notes[:2])
+    return "It is included because the parsed menu text produced a usable structured dish entry."
+
+
+def _fallback_caution(item: ParsedItem) -> str:
+    cautions: list[str] = []
+    if item.explicit_allergens:
+        cautions.append(f"Possible allergens: {', '.join(item.explicit_allergens[:4])}.")
+    if item.nutrition_confidence is not None and item.nutrition_confidence < 0.75:
+        cautions.append("Nutrition estimate is heuristic and may be broad.")
+    if not item.description:
+        cautions.append("Description is missing, so some details may be uncertain.")
+    if not cautions:
+        cautions.append("Use the menu text or staff confirmation for exact ingredients and allergen handling.")
+    return " ".join(cautions)
+
+
+def enrich_items_with_llm(
+    items: list[ParsedItem],
+    user_context: str | None = None,
+    top_k: int = 5,
+) -> tuple[str, str, list[ParsedItem], list[RAGEvidenceRow]]:
     settings = get_settings()
     if not items:
-        return "llm", settings.llm_model or "unconfigured", []
+        return "llm", settings.llm_model or "unconfigured", [], []
     if not llm_is_configured():
         raise RuntimeError("LLM enrichment is disabled or not configured.")
 
     limited_items = items[: max(1, min(top_k, settings.llm_max_items_per_request))]
-    prompt_items = _build_prompt_items(limited_items)
+    evidence_by_item, retrieval_rows = retrieve_rag_for_items(
+        limited_items,
+        user_context=user_context,
+        top_k=settings.rag_top_k,
+    )
+    prompt_items = _build_prompt_items(limited_items, evidence_by_item)
     context_text = user_context.strip() if user_context else ""
 
     system_prompt = (
         "You are helping a restaurant menu recommendation app. "
-        "You will receive structured dish items. "
+        "You will receive structured dish items plus retrieved evidence from the app knowledge base. "
         "Return only valid JSON. "
-        "For each item, write concise user-facing fields: "
-        "llm_summary, llm_why_it_fits, llm_caution_note. "
-        "Do not invent ingredients, allergens, diets, or calorie facts beyond the provided fields. "
-        "If uncertainty exists, mention it briefly in llm_caution_note."
+        "For every item, always return non-empty strings for llm_summary, llm_why_it_fits, and llm_caution_note, "
+        "and always echo the exact local_id from input. "
+        "Use the structured item fields first, then use retrieved evidence only as supporting context. "
+        "Treat user_context as a soft preference note, not as text to repeat back. "
+        "Do not quote or copy user_context verbatim into llm_why_it_fits. "
+        "Do not mention the phrases user context, preference note, or the user's preference. "
+        "Instead, explain fit directly through dish properties such as section, ingredients, diet flags, allergens, or calorie range. "
+        "Do not invent ingredients, allergens, diets, or calorie facts beyond the provided fields and retrieved evidence. "
+        "If uncertainty exists, say so briefly in llm_caution_note instead of leaving fields blank."
     )
     user_prompt = {
         "user_context": context_text or None,
@@ -139,9 +282,9 @@ def enrich_items_with_llm(items: list[ParsedItem], user_context: str | None = No
             "items": [
                 {
                     "local_id": "same as input",
-                    "llm_summary": "short summary",
-                    "llm_why_it_fits": "why it may fit the user context",
-                    "llm_caution_note": "short caution or uncertainty note",
+                    "llm_summary": "short grounded summary",
+                    "llm_why_it_fits": "short grounded fit explanation",
+                    "llm_caution_note": "short grounded caution note",
                 }
             ]
         },
@@ -155,21 +298,25 @@ def enrich_items_with_llm(items: list[ParsedItem], user_context: str | None = No
             ]
         )
         rows = _parse_response_items(content)
-        row_by_id = {str(row.get("local_id")): row for row in rows if row.get("local_id")}
+        row_by_id = _normalized_rows(rows, limited_items)
         enriched_items: list[ParsedItem] = []
         for item in limited_items:
             row = row_by_id.get(item.local_id, {})
+            evidence_rows = evidence_by_item.get(item.local_id, [])
+            summary = _clean_generated_text(_extract_field(row, ["llm_summary", "summary", "short_summary"]), context_text)
+            why_it_fits = _clean_generated_text(_extract_field(row, ["llm_why_it_fits", "why_it_fits", "fit_reason"]), context_text)
+            caution_note = _clean_generated_text(_extract_field(row, ["llm_caution_note", "caution_note", "caution"]), context_text)
             enriched_items.append(
                 item.model_copy(
                     update={
-                        "llm_summary": row.get("llm_summary"),
-                        "llm_why_it_fits": row.get("llm_why_it_fits"),
-                        "llm_caution_note": row.get("llm_caution_note"),
+                        "llm_summary": summary or _fallback_summary(item, evidence_rows),
+                        "llm_why_it_fits": why_it_fits or _fallback_why(item, context_text),
+                        "llm_caution_note": caution_note or _fallback_caution(item),
                     }
                 )
             )
         _LLM_STATE["last_error"] = None
-        return "openai_compatible", settings.llm_model or "unknown", enriched_items
+        return "rag_openai_compatible", settings.llm_model or "unknown", enriched_items, retrieval_rows
     except Exception as exc:
         _LLM_STATE["last_error"] = str(exc)
         raise

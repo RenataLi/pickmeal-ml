@@ -270,12 +270,12 @@ def recommend_items(request: RecommendRequest) -> tuple[str, int, list[Recommend
     query_text = _query_text(request)
     engine_result = _semantic_scores(texts, query_text, request.engine)
 
-    rows: list[RecommendationRow] = []
+    all_rows: list[RecommendationRow] = []
     for idx, item in enumerate(candidates):
         rule_score, reasons = _rule_score(request, item)
         semantic_score = float(engine_result.scores[idx])
         total_score = 0.60 * semantic_score + 0.40 * rule_score
-        rows.append(
+        all_rows.append(
             RecommendationRow(
                 rank=0,
                 local_id=item.local_id,
@@ -292,13 +292,13 @@ def recommend_items(request: RecommendRequest) -> tuple[str, int, list[Recommend
             )
         )
 
-    rows.sort(key=lambda row: row.score, reverse=True)
+    all_rows.sort(key=lambda row: row.score, reverse=True)
     top_k = max(1, request.top_k)
-    rows = rows[:top_k]
+    rows = all_rows[:top_k]
 
     for rank, row in enumerate(rows, start=1):
         row.rank = rank
 
-    combo_rows = build_combo_rows(request, candidates, rows)
+    combo_rows = build_combo_rows(request, candidates, all_rows)
 
     return engine_result.engine_used, len(candidates), rows, combo_rows

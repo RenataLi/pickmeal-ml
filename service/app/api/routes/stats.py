@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from ...config import get_settings
-from ...schemas import DatasetStatsResponse, LLMStatsResponse, LineRoleStatsResponse, OCRStatsResponse, ParserStatsResponse, StorageStatsResponse
+from ...schemas import DatasetStatsResponse, LLMStatsResponse, LineRoleStatsResponse, OCRStatsResponse, ParserStatsResponse, RAGStatsResponse, StorageStatsResponse
 from ...services.stats_service import (
     load_dataset_summary,
     load_llm_stats,
@@ -12,6 +12,7 @@ from ...services.stats_service import (
     load_ocr_stats,
     load_parser_comparison,
     load_parser_metrics,
+    load_rag_stats,
     load_storage_stats,
 )
 
@@ -58,3 +59,9 @@ def storage_stats() -> StorageStatsResponse:
 def llm_stats() -> LLMStatsResponse:
     payload = load_llm_stats()
     return LLMStatsResponse(**payload)
+
+
+@router.get("/rag", response_model=RAGStatsResponse)
+def rag_stats() -> RAGStatsResponse:
+    payload = load_rag_stats()
+    return RAGStatsResponse(**payload)
