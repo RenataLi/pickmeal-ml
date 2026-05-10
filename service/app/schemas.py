@@ -154,6 +154,29 @@ class RAGStatsResponse(BaseModel):
     last_error: str | None = None
 
 
+class NutritionStatsResponse(BaseModel):
+    enabled: bool
+    initialized: bool
+    database_url_present: bool
+    seed_path: str | None = None
+    latest_version: dict[str, Any] | None = None
+    row_counts: dict[str, int] = Field(default_factory=dict)
+    source_counts: dict[str, int] = Field(default_factory=dict)
+    last_error: str | None = None
+
+
+class NutritionRefreshRequest(BaseModel):
+    force: bool = False
+
+
+class NutritionRefreshResponse(BaseModel):
+    source_name: str
+    source_version: str
+    version_id: int
+    record_count: int
+    skipped: bool = False
+
+
 class RecommendRequest(BaseModel):
     session_id: str | None = None
     items: list[ParsedItem]

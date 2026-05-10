@@ -7,6 +7,7 @@ from .config import get_settings
 from .schemas import HealthResponse, ParseLinesRequest, ParseResponse
 from .services.enrichment_service import enrich_items
 from .services.line_role_service import line_role_model_is_available, predict_line_roles
+from .services.nutrition_reference_service import initialize_nutrition_reference
 from .services.parser_service import clean_parsed_items, get_parser_module_name, parse_lines
 
 
@@ -25,6 +26,11 @@ app.add_middleware(
 @app.get("/health", response_model=HealthResponse)
 def healthcheck() -> HealthResponse:
     return HealthResponse(status="ok", api_title=app.title, api_version=settings.api_version)
+
+
+@app.on_event("startup")
+def startup() -> None:
+    initialize_nutrition_reference()
 
 
 @app.post("/parse/lines", response_model=ParseResponse)

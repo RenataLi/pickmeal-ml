@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from ..schemas import ParsedItem
+from .nutrition_reference_service import estimate_from_references
 
 
 INGREDIENT_KEYWORDS = {
@@ -159,13 +160,39 @@ def estimate_calories(item: ParsedItem, ingredients: list[str]) -> tuple[float, 
     return round(low, 1), round(mid, 1), round(high, 1), min(confidence, 0.95)
 
 
+def estimate_calories_with_references(item: ParsedItem, ingredients: list[str]) -> tuple[float, float, float, float, list[str]]:
+    heur_low, heur_mid, heur_high, heur_confidence = estimate_calories(item, ingredients)
+    notes = ["heuristic nutrition estimate from dish title, section and description"]
+    reference_estimate = estimate_from_references(ingredients)
+    if not reference_estimate:
+        return heur_low, heur_mid, heur_high, heur_confidence, notes
+
+    ref_low = float(reference_estimate["calories_low"])
+    ref_mid = float(reference_estimate["calories_mid"])
+    ref_high = float(reference_estimate["calories_high"])
+    matched = list(reference_estimate.get("matched_ingredients") or [])
+    source_versions = list(reference_estimate.get("source_versions") or [])
+    confidence_bonus = float(reference_estimate.get("confidence_bonus") or 0.0)
+
+    low = round(0.35 * heur_low + 0.65 * ref_low, 1)
+    mid = round(0.35 * heur_mid + 0.65 * ref_mid, 1)
+    high = round(0.35 * heur_high + 0.65 * ref_high, 1)
+    confidence = round(min(0.98, heur_confidence + 0.12 + confidence_bonus), 3)
+
+    notes.append("nutrition reference lookup matched ingredient-level records in PostgreSQL")
+    if matched:
+        notes.append(f"reference-backed estimate used matched ingredients: {', '.join(matched)}")
+    if source_versions:
+        notes.append(f"nutrition source versions: {', '.join(source_versions)}")
+    return low, mid, high, confidence, notes
+
+
 def enrich_item(item: ParsedItem) -> ParsedItem:
     ingredients = detect_ingredient_hints(item)
     allergens = derive_allergens(item.explicit_allergens, ingredients)
     diet_flags = derive_diet_flags(ingredients, allergens)
-    calories_low, calories_mid, calories_high, nutrition_confidence = estimate_calories(item, ingredients)
+    calories_low, calories_mid, calories_high, nutrition_confidence, notes = estimate_calories_with_references(item, ingredients)
 
-    notes = ["heuristic nutrition estimate from dish title, section and description"]
     if ingredients:
         notes.append("ingredient hints detected from menu text")
     if not item.description:

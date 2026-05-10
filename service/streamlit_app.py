@@ -1089,6 +1089,33 @@ def render_dashboard(api_url: str):
         )
         show_dataframe(stats_rows, height=120)
 
+    nutrition_stats = fetch_api_json(api_url, "/stats/nutrition")
+    if isinstance(nutrition_stats, dict):
+        st.markdown("### Nutrition reference layer")
+        n1, n2, n3, n4 = st.columns(4)
+        latest_version = nutrition_stats.get("latest_version") or {}
+        with n1:
+            metric_card("Nutrition enabled", "yes" if nutrition_stats.get("enabled") else "no", "Reference-backed enrichment layer")
+        with n2:
+            metric_card("Nutrition ready", "yes" if nutrition_stats.get("initialized") else "no", "Versioned seed loaded into PostgreSQL")
+        with n3:
+            metric_card("Reference rows", str(nutrition_stats.get("row_counts", {}).get("nutrition_reference_items", "—")), "Ingredient-level nutrition records")
+        with n4:
+            metric_card("Reference version", str(latest_version.get("source_version") or "—"), "Current loaded nutrition reference set")
+
+        nutrition_df = pd.DataFrame(
+            [
+                {
+                    "seed_path": nutrition_stats.get("seed_path") or "",
+                    "latest_source": latest_version.get("source_name") or "",
+                    "record_count": latest_version.get("record_count") or 0,
+                    "source_counts": json.dumps(nutrition_stats.get("source_counts") or {}, ensure_ascii=False),
+                    "last_error": nutrition_stats.get("last_error") or "",
+                }
+            ]
+        )
+        show_dataframe(nutrition_df, height=120)
+
     llm_stats = fetch_api_json(api_url, "/stats/llm")
     if isinstance(llm_stats, dict):
         st.markdown("### LLM enrichment")
