@@ -1116,6 +1116,40 @@ def render_dashboard(api_url: str):
         )
         show_dataframe(nutrition_df, height=120)
 
+    runtime_stats = fetch_api_json(api_url, "/stats/runtime")
+    if isinstance(runtime_stats, dict):
+        st.markdown("### Runtime monitoring")
+        rt1, rt2, rt3, rt4 = st.columns(4)
+        path_rows = runtime_stats.get("path_rows") or []
+        stage_rows = runtime_stats.get("stage_rows") or []
+        recent_errors = runtime_stats.get("recent_errors") or []
+        stage_error_count = int(sum(int(row.get("error_count") or 0) for row in stage_rows))
+        with rt1:
+            metric_card("Uptime (s)", str(runtime_stats.get("uptime_seconds") or "0"), "Current service process uptime")
+        with rt2:
+            metric_card("HTTP requests", str(runtime_stats.get("request_count") or 0), "Requests seen by the gateway")
+        with rt3:
+            metric_card("Tracked routes", str(len(path_rows)), "Per-route latency and status counters")
+        with rt4:
+            metric_card("Stage errors", str(stage_error_count), "Failures captured across OCR, parser, storage, and recommendation steps")
+
+        runtime_df = pd.DataFrame(path_rows)
+        if not runtime_df.empty:
+            cols = [c for c in ["method", "path", "count", "error_count", "last_status", "avg_duration_ms", "max_duration_ms", "last_seen_at"] if c in runtime_df.columns]
+            st.markdown("#### Route-level request stats")
+            show_dataframe(runtime_df[cols], height=220)
+
+        stage_df = pd.DataFrame(stage_rows)
+        if not stage_df.empty:
+            cols = [c for c in ["component", "operation", "count", "ok_count", "error_count", "avg_duration_ms", "max_duration_ms", "last_duration_ms"] if c in stage_df.columns]
+            st.markdown("#### Stage-level pipeline stats")
+            show_dataframe(stage_df[cols], height=220)
+
+        if recent_errors:
+            error_df = pd.DataFrame(recent_errors)
+            st.markdown("#### Recent runtime errors")
+            show_dataframe(error_df, height=180)
+
     llm_stats = fetch_api_json(api_url, "/stats/llm")
     if isinstance(llm_stats, dict):
         st.markdown("### LLM enrichment")

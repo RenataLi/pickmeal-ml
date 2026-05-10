@@ -10,6 +10,7 @@ from .llm_service import load_llm_stats as _load_llm_stats
 from .nutrition_reference_service import load_nutrition_reference_stats as _load_nutrition_reference_stats
 from .ocr_service import get_ocr_runtime_info
 from .rag_service import load_rag_stats as _load_rag_stats
+from .runtime_monitoring_service import load_runtime_stats as _load_runtime_stats
 from .storage_service import load_storage_stats as _load_storage_stats
 
 
@@ -107,3 +108,8 @@ def load_rag_stats() -> dict:
 
 def load_nutrition_stats() -> dict:
     return _load_nutrition_reference_stats()
+
+
+def load_runtime_stats() -> dict:
+    settings = get_settings()
+    return _load_runtime_stats(settings.api_title)
