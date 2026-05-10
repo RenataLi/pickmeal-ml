@@ -52,11 +52,18 @@ class ParseTextRequest(BaseModel):
     lines: list[str | OCRLine]
 
 
+class ParseLinesRequest(BaseModel):
+    ocr_lines: list[OCRLine]
+    ocr_backend: str | None = None
+
+
 class ParseResponse(BaseModel):
     n_lines: int
     n_items: int
     session_id: str | None = None
     ocr_backend: str | None = None
+    requested_ocr_backend: str | None = None
+    ocr_backend_warning: str | None = None
     parser_module: str | None = None
     line_role_model_loaded: bool = False
     ocr_lines: list[OCRLine] = Field(default_factory=list)
@@ -94,6 +101,14 @@ class OCRStatsResponse(BaseModel):
     paddle_detection_model: str | None = None
     paddle_mobile_detection_model: str | None = None
     ocr_max_image_side: int | None = None
+
+
+class OCRImageResponse(BaseModel):
+    backend: str
+    requested_backend: str | None = None
+    warning: str | None = None
+    n_lines: int
+    lines: list[OCRLine] = Field(default_factory=list)
 
 
 class StorageStatsResponse(BaseModel):
@@ -137,6 +152,29 @@ class RAGStatsResponse(BaseModel):
     document_count: int = 0
     source_type_counts: dict[str, int] = Field(default_factory=dict)
     last_error: str | None = None
+
+
+class NutritionStatsResponse(BaseModel):
+    enabled: bool
+    initialized: bool
+    database_url_present: bool
+    seed_path: str | None = None
+    latest_version: dict[str, Any] | None = None
+    row_counts: dict[str, int] = Field(default_factory=dict)
+    source_counts: dict[str, int] = Field(default_factory=dict)
+    last_error: str | None = None
+
+
+class NutritionRefreshRequest(BaseModel):
+    force: bool = False
+
+
+class NutritionRefreshResponse(BaseModel):
+    source_name: str
+    source_version: str
+    version_id: int
+    record_count: int
+    skipped: bool = False
 
 
 class RecommendRequest(BaseModel):
@@ -209,6 +247,23 @@ class SimilarDishRow(BaseModel):
 
 class SimilarDishesResponse(BaseModel):
     rows: list[SimilarDishRow] = Field(default_factory=list)
+
+
+class StorageSnapshotResponse(BaseModel):
+    schema_version: int
+    exported_at: str
+    vector_backend: str | None = None
+    row_counts: dict[str, int] = Field(default_factory=dict)
+    tables: dict[str, list[dict[str, Any]]] = Field(default_factory=dict)
+
+
+class StorageSnapshotImportRequest(BaseModel):
+    snapshot: dict[str, Any]
+
+
+class StorageSnapshotImportResponse(BaseModel):
+    imported_counts: dict[str, int] = Field(default_factory=dict)
+    replaced_existing: bool = True
 
 
 class LLMItemEnrichmentRequest(BaseModel):

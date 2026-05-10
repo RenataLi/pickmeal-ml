@@ -39,6 +39,8 @@ PADDLE_BACKEND_ALIASES = {
 class OCRRunResult:
     backend: str
     lines: list[OCRLine]
+    requested_backend: str | None = None
+    warning: str | None = None
 
 
 def _normalize_langs(langs_key: str | None) -> list[str]:
@@ -418,23 +420,31 @@ def run_ocr(
     if requested == "auto":
         langs_key = langs or settings.default_ocr_langs
         if rapid_available:
-            return OCRRunResult(backend="rapidocr", lines=run_rapidocr(image_bytes, langs=langs))
+            return OCRRunResult(backend="rapidocr", lines=run_rapidocr(image_bytes, langs=langs), requested_backend="auto")
         if easy_available and (_prefer_easy_for_image(image_bytes) or not paddle_available):
-            return OCRRunResult(backend="easyocr", lines=run_easyocr(image_bytes, langs=langs))
+            return OCRRunResult(backend="easyocr", lines=run_easyocr(image_bytes, langs=langs), requested_backend="auto")
         if paddle_available and paddle_models_are_cached(langs_key, backend_name="paddleocr_mobile"):
             try:
-                return OCRRunResult(backend="paddleocr_mobile", lines=run_paddleocr(image_bytes, langs=langs, backend_name="paddleocr_mobile"))
+                return OCRRunResult(
+                    backend="paddleocr_mobile",
+                    lines=run_paddleocr(image_bytes, langs=langs, backend_name="paddleocr_mobile"),
+                    requested_backend="auto",
+                )
             except Exception:
                 if easy_available:
                     easy_lines = run_easyocr(image_bytes, langs=langs)
-                    return OCRRunResult(backend="easyocr", lines=easy_lines)
+                    return OCRRunResult(backend="easyocr", lines=easy_lines, requested_backend="auto")
                 raise
         if easy_available:
-            return OCRRunResult(backend="easyocr", lines=run_easyocr(image_bytes, langs=langs))
+            return OCRRunResult(backend="easyocr", lines=run_easyocr(image_bytes, langs=langs), requested_backend="auto")
         if rapid_available:
-            return OCRRunResult(backend="rapidocr", lines=run_rapidocr(image_bytes, langs=langs))
+            return OCRRunResult(backend="rapidocr", lines=run_rapidocr(image_bytes, langs=langs), requested_backend="auto")
         if paddle_available:
-            return OCRRunResult(backend="paddleocr_mobile", lines=run_paddleocr(image_bytes, langs=langs, backend_name="paddleocr_mobile"))
+            return OCRRunResult(
+                backend="paddleocr_mobile",
+                lines=run_paddleocr(image_bytes, langs=langs, backend_name="paddleocr_mobile"),
+                requested_backend="auto",
+            )
         raise RuntimeError("No OCR backend is available in the current environment.")
 
     backends = [requested]
@@ -442,6 +452,19 @@ def run_ocr(
         backends.append(fallback)
 
     errors: list[str] = []
+
+    def _fallback_warning(target_backend: str) -> str | None:
+        if requested == target_backend:
+            return None
+        for error in errors:
+            if error.startswith(f"{requested}:"):
+                reason = error.split(":", 1)[1].strip()
+                return (
+                    f"Requested OCR engine '{requested}' was unavailable ({reason}), "
+                    f"so the service fell back to {target_backend}."
+                )
+        return f"Requested OCR engine '{requested}' was unavailable, so the service fell back to {target_backend}."
+
     for name in backends:
         try:
             if name in PADDLE_BACKEND_ALIASES:
@@ -450,17 +473,31 @@ def run_ocr(
                     errors.append(f"{name}: {reason}")
                     continue
                 normalized = PADDLE_BACKEND_ALIASES[name]
-                return OCRRunResult(backend=normalized, lines=run_paddleocr(image_bytes, langs=langs, backend_name=normalized))
+                return OCRRunResult(
+                    backend=normalized,
+                    lines=run_paddleocr(image_bytes, langs=langs, backend_name=normalized),
+                    requested_backend=requested,
+                )
             if name == "rapidocr":
                 if not ocr_backend_is_available("rapidocr"):
                     errors.append(f"{name}: backend unavailable")
                     continue
-                return OCRRunResult(backend="rapidocr", lines=run_rapidocr(image_bytes, langs=langs))
+                return OCRRunResult(
+                    backend="rapidocr",
+                    lines=run_rapidocr(image_bytes, langs=langs),
+                    requested_backend=requested,
+                    warning=_fallback_warning("rapidocr"),
+                )
             if name == "easyocr":
                 if not ocr_backend_is_available("easyocr"):
                     errors.append(f"{name}: backend unavailable")
                     continue
-                return OCRRunResult(backend="easyocr", lines=run_easyocr(image_bytes, langs=langs))
+                return OCRRunResult(
+                    backend="easyocr",
+                    lines=run_easyocr(image_bytes, langs=langs),
+                    requested_backend=requested,
+                    warning=_fallback_warning("easyocr"),
+                )
             errors.append(f"{name}: unsupported backend")
         except Exception as exc:
             errors.append(f"{name}: {exc}")

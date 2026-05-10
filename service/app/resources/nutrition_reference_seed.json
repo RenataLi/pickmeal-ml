@@ -1,0 +1,28 @@
+{
+  "source_name": "curated_prototype_reference",
+  "source_version": "2026-05-10",
+  "notes": "Ingredient-level prototype nutrition reference seed aligned with common menu ingredients.",
+  "items": [
+    {"ingredient_key": "chicken", "display_name": "Chicken breast", "calories_per_100g": 165.0, "protein_g_per_100g": 31.0, "fat_g_per_100g": 3.6, "carbs_g_per_100g": 0.0, "assumed_serving_g": 90.0},
+    {"ingredient_key": "beef", "display_name": "Cooked beef", "calories_per_100g": 250.0, "protein_g_per_100g": 26.0, "fat_g_per_100g": 15.0, "carbs_g_per_100g": 0.0, "assumed_serving_g": 100.0},
+    {"ingredient_key": "pork", "display_name": "Cooked pork", "calories_per_100g": 242.0, "protein_g_per_100g": 27.0, "fat_g_per_100g": 14.0, "carbs_g_per_100g": 0.0, "assumed_serving_g": 90.0},
+    {"ingredient_key": "lamb", "display_name": "Cooked lamb", "calories_per_100g": 294.0, "protein_g_per_100g": 25.0, "fat_g_per_100g": 21.0, "carbs_g_per_100g": 0.0, "assumed_serving_g": 90.0},
+    {"ingredient_key": "fish", "display_name": "Cooked fish", "calories_per_100g": 208.0, "protein_g_per_100g": 22.0, "fat_g_per_100g": 12.0, "carbs_g_per_100g": 0.0, "assumed_serving_g": 110.0},
+    {"ingredient_key": "shellfish", "display_name": "Cooked shellfish", "calories_per_100g": 99.0, "protein_g_per_100g": 24.0, "fat_g_per_100g": 0.3, "carbs_g_per_100g": 2.0, "assumed_serving_g": 80.0},
+    {"ingredient_key": "egg", "display_name": "Egg", "calories_per_100g": 155.0, "protein_g_per_100g": 13.0, "fat_g_per_100g": 11.0, "carbs_g_per_100g": 1.1, "assumed_serving_g": 50.0},
+    {"ingredient_key": "milk", "display_name": "Milk / cheese family proxy", "calories_per_100g": 260.0, "protein_g_per_100g": 18.0, "fat_g_per_100g": 20.0, "carbs_g_per_100g": 2.0, "assumed_serving_g": 35.0},
+    {"ingredient_key": "wheat", "display_name": "Wheat / bread / pasta family proxy", "calories_per_100g": 320.0, "protein_g_per_100g": 9.0, "fat_g_per_100g": 3.5, "carbs_g_per_100g": 62.0, "assumed_serving_g": 70.0},
+    {"ingredient_key": "rice", "display_name": "Cooked rice", "calories_per_100g": 130.0, "protein_g_per_100g": 2.7, "fat_g_per_100g": 0.3, "carbs_g_per_100g": 28.0, "assumed_serving_g": 120.0},
+    {"ingredient_key": "potato", "display_name": "Potato", "calories_per_100g": 77.0, "protein_g_per_100g": 2.0, "fat_g_per_100g": 0.1, "carbs_g_per_100g": 17.0, "assumed_serving_g": 100.0},
+    {"ingredient_key": "tomato", "display_name": "Tomato", "calories_per_100g": 18.0, "protein_g_per_100g": 0.9, "fat_g_per_100g": 0.2, "carbs_g_per_100g": 3.9, "assumed_serving_g": 40.0},
+    {"ingredient_key": "mushroom", "display_name": "Mushroom", "calories_per_100g": 22.0, "protein_g_per_100g": 3.1, "fat_g_per_100g": 0.3, "carbs_g_per_100g": 3.3, "assumed_serving_g": 50.0},
+    {"ingredient_key": "spinach", "display_name": "Spinach", "calories_per_100g": 23.0, "protein_g_per_100g": 2.9, "fat_g_per_100g": 0.4, "carbs_g_per_100g": 3.6, "assumed_serving_g": 40.0},
+    {"ingredient_key": "corn", "display_name": "Corn", "calories_per_100g": 96.0, "protein_g_per_100g": 3.4, "fat_g_per_100g": 1.5, "carbs_g_per_100g": 21.0, "assumed_serving_g": 50.0},
+    {"ingredient_key": "peanut", "display_name": "Peanut", "calories_per_100g": 567.0, "protein_g_per_100g": 26.0, "fat_g_per_100g": 49.0, "carbs_g_per_100g": 16.0, "assumed_serving_g": 20.0},
+    {"ingredient_key": "tree_nuts", "display_name": "Tree nuts", "calories_per_100g": 607.0, "protein_g_per_100g": 20.0, "fat_g_per_100g": 54.0, "carbs_g_per_100g": 21.0, "assumed_serving_g": 20.0},
+    {"ingredient_key": "soy", "display_name": "Soy / tofu family proxy", "calories_per_100g": 144.0, "protein_g_per_100g": 17.0, "fat_g_per_100g": 8.0, "carbs_g_per_100g": 3.0, "assumed_serving_g": 45.0},
+    {"ingredient_key": "sesame", "display_name": "Sesame", "calories_per_100g": 573.0, "protein_g_per_100g": 18.0, "fat_g_per_100g": 50.0, "carbs_g_per_100g": 23.0, "assumed_serving_g": 12.0},
+    {"ingredient_key": "chocolate", "display_name": "Chocolate", "calories_per_100g": 546.0, "protein_g_per_100g": 4.9, "fat_g_per_100g": 31.0, "carbs_g_per_100g": 61.0, "assumed_serving_g": 35.0},
+    {"ingredient_key": "sugar", "display_name": "Sugar / dessert sweetness proxy", "calories_per_100g": 387.0, "protein_g_per_100g": 0.0, "fat_g_per_100g": 0.0, "carbs_g_per_100g": 100.0, "assumed_serving_g": 25.0}
+  ]
+}
