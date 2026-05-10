@@ -177,6 +177,17 @@ class NutritionRefreshResponse(BaseModel):
     skipped: bool = False
 
 
+class RuntimeStatsResponse(BaseModel):
+    service_id: str
+    started_at: str
+    uptime_seconds: float
+    request_count: int
+    status_counts: dict[str, int] = Field(default_factory=dict)
+    path_rows: list[dict[str, Any]] = Field(default_factory=list)
+    stage_rows: list[dict[str, Any]] = Field(default_factory=list)
+    recent_errors: list[dict[str, Any]] = Field(default_factory=list)
+
+
 class RecommendRequest(BaseModel):
     session_id: str | None = None
     items: list[ParsedItem]

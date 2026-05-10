@@ -13,6 +13,7 @@ from .api.routes.stats import router as stats_router
 from .config import get_settings
 from .services.nutrition_reference_service import initialize_nutrition_reference
 from .services.rag_service import initialize_rag
+from .services.runtime_monitoring_service import attach_runtime_monitoring
 from .services.storage_service import initialize_storage
 
 settings = get_settings()
@@ -25,6 +26,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+attach_runtime_monitoring(app, service_id=settings.api_title)
 
 app.include_router(health_router)
 app.include_router(stats_router)
