@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
 from .schemas import HealthResponse, LLMItemEnrichmentRequest, LLMItemEnrichmentResponse, RuntimeStatsResponse
-from .services.llm_service import enrich_items_with_llm
+from .services.llm_service import enrich_items_with_llm, llm_cache_context
 from .services.rag_service import initialize_rag
 from .services.redis_cache_service import get_cached_payload, initialize_cache, set_cached_payload
 from .services.runtime_monitoring_service import attach_runtime_monitoring, load_runtime_stats, measure_stage
@@ -42,13 +42,14 @@ def startup() -> None:
 
 @app.post("/llm/enrich-items", response_model=LLMItemEnrichmentResponse)
 def enrich_items(payload: LLMItemEnrichmentRequest) -> LLMItemEnrichmentResponse:
+    cache_context = llm_cache_context()
     cache_lookup_timer = measure_stage(
         SERVICE_ID,
         "llm",
         "cache_lookup",
         details={"n_items": len(payload.items), "top_k": payload.top_k},
     )
-    cached = get_cached_payload("llm_enrichment", payload.model_dump(mode="json"))
+    cached = get_cached_payload("llm_enrichment", payload.model_dump(mode="json"), key_context=cache_context)
     if isinstance(cached, dict):
         cache_lookup_timer.finish(
             ok=True,
@@ -101,6 +102,7 @@ def enrich_items(payload: LLMItemEnrichmentRequest) -> LLMItemEnrichmentResponse
             payload.model_dump(mode="json"),
             response.model_dump(mode="json"),
             settings.llm_cache_ttl_seconds,
+            key_context=cache_context,
         )
         cache_store_timer.finish(ok=True, extra_details={"stored": stored})
         return response

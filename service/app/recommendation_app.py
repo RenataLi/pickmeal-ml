@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import get_settings
 from .schemas import HealthResponse, RecommendRequest, RecommendResponse, RuntimeStatsResponse
 from .services.redis_cache_service import get_cached_payload, initialize_cache, set_cached_payload
-from .services.recommendation_service import recommend_items
+from .services.recommendation_service import recommend_items, recommendation_cache_context
 from .services.runtime_monitoring_service import attach_runtime_monitoring, load_runtime_stats, measure_stage
 
 
@@ -40,13 +40,14 @@ def startup() -> None:
 
 @app.post("/recommend", response_model=RecommendResponse)
 def recommend(payload: RecommendRequest) -> RecommendResponse:
+    cache_context = recommendation_cache_context()
     cache_lookup_timer = measure_stage(
         SERVICE_ID,
         "recommendation",
         "cache_lookup",
         details={"n_items": len(payload.items), "engine_requested": payload.engine},
     )
-    cached = get_cached_payload("recommendation", payload.model_dump(mode="json"))
+    cached = get_cached_payload("recommendation", payload.model_dump(mode="json"), key_context=cache_context)
     if isinstance(cached, dict):
         cache_lookup_timer.finish(
             ok=True,
@@ -94,6 +95,7 @@ def recommend(payload: RecommendRequest) -> RecommendResponse:
             payload.model_dump(mode="json"),
             response.model_dump(mode="json"),
             settings.recommendation_cache_ttl_seconds,
+            key_context=cache_context,
         )
         cache_store_timer.finish(ok=True, extra_details={"stored": stored})
         return response

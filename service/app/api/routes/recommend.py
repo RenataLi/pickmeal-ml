@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException
 from ...schemas import CombinationRow, RecommendationRow, RecommendRequest, RecommendResponse
 from ...services.redis_cache_service import get_cached_payload, set_cached_payload
 from ...services.runtime_monitoring_service import measure_stage
-from ...services.recommendation_service import recommend_items
+from ...services.recommendation_service import recommend_items, recommendation_cache_context
 from ...services.service_client import post_json, service_urls
 from ...services.storage_service import persist_recommendation_result
 
@@ -88,13 +88,14 @@ def recommend(payload: RecommendRequest) -> RecommendResponse:
         from ...config import get_settings
 
         settings = get_settings()
+        cache_context = recommendation_cache_context()
         cache_lookup_timer = measure_stage(
             settings.api_title,
             "gateway",
             "recommend_cache_lookup",
             details={"n_items": len(payload.items), "engine_requested": payload.engine},
         )
-        cached = get_cached_payload("recommendation", payload.model_dump(mode="json"))
+        cached = get_cached_payload("recommendation", payload.model_dump(mode="json"), key_context=cache_context)
         if isinstance(cached, dict):
             cache_lookup_timer.finish(
                 ok=True,
@@ -119,6 +120,7 @@ def recommend(payload: RecommendRequest) -> RecommendResponse:
                 payload.model_dump(mode="json"),
                 response.model_dump(mode="json"),
                 settings.recommendation_cache_ttl_seconds,
+                key_context=cache_context,
             )
             cache_store_timer.finish(ok=True, extra_details={"stored": stored})
         persist_timer = measure_stage(

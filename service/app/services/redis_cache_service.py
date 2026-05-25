@@ -86,12 +86,21 @@ def _fingerprint(payload: Any) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
-def _cache_key(category: str, payload: Any) -> str:
+def _cache_identity(payload: Any, key_context: Any | None = None) -> Any:
+    if key_context is None:
+        return payload
+    return {
+        "payload": payload,
+        "key_context": key_context,
+    }
+
+
+def _cache_key(category: str, payload: Any, key_context: Any | None = None) -> str:
     settings = get_settings()
-    return f"{settings.redis_cache_namespace}:{category}:{_fingerprint(payload)}"
+    return f"{settings.redis_cache_namespace}:{category}:{_fingerprint(_cache_identity(payload, key_context))}"
 
 
-def get_cached_payload(category: str, payload: Any) -> dict[str, Any] | None:
+def get_cached_payload(category: str, payload: Any, key_context: Any | None = None) -> dict[str, Any] | None:
     _mark_counter("get_count")
     if not cache_enabled():
         return None
@@ -99,7 +108,7 @@ def get_cached_payload(category: str, payload: Any) -> dict[str, Any] | None:
         client = _load_redis_client()
         if client is None:
             return None
-        raw = client.get(_cache_key(category, payload))
+        raw = client.get(_cache_key(category, payload, key_context))
         if raw is None:
             _mark_counter("miss_count")
             return None
@@ -110,7 +119,13 @@ def get_cached_payload(category: str, payload: Any) -> dict[str, Any] | None:
         return None
 
 
-def set_cached_payload(category: str, payload: Any, response_payload: Any, ttl_seconds: int) -> bool:
+def set_cached_payload(
+    category: str,
+    payload: Any,
+    response_payload: Any,
+    ttl_seconds: int,
+    key_context: Any | None = None,
+) -> bool:
     if not cache_enabled() or ttl_seconds <= 0:
         return False
     try:
@@ -118,7 +133,7 @@ def set_cached_payload(category: str, payload: Any, response_payload: Any, ttl_s
         if client is None:
             return False
         client.setex(
-            _cache_key(category, payload),
+            _cache_key(category, payload, key_context),
             ttl_seconds,
             _canonical_json(response_payload),
         )

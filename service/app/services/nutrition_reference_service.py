@@ -308,26 +308,38 @@ def lookup_nutrition_references(ingredients: list[str]) -> list[dict[str, Any]]:
     return result
 
 
-def estimate_from_references(ingredients: list[str]) -> dict[str, Any] | None:
+def estimate_from_references(
+    ingredients: list[str],
+    ingredient_weights: dict[str, float] | None = None,
+) -> dict[str, Any] | None:
     refs = lookup_nutrition_references(ingredients)
     if not refs:
         return None
 
     mid = 0.0
     matched: list[str] = []
+    matched_weights: list[float] = []
     for ref in refs:
         calories = _safe_float(ref.get("calories_per_100g"))
         serving = _safe_float(ref.get("assumed_serving_g"))
         if calories is None or serving is None:
             continue
-        mid += calories * serving / 100.0
-        matched.append(str(ref.get("ingredient_key")))
+        ingredient_key = str(ref.get("ingredient_key"))
+        weight = 1.0
+        if ingredient_weights is not None:
+            weight = float(ingredient_weights.get(ingredient_key, 0.65))
+            weight = max(0.35, min(1.0, weight))
+        mid += calories * serving / 100.0 * weight
+        matched.append(ingredient_key)
+        matched_weights.append(weight)
 
     if mid <= 0:
         return None
 
     result = {
         "matched_ingredients": matched,
+        "matched_weight_sum": round(sum(matched_weights), 3),
+        "avg_match_weight": round(sum(matched_weights) / len(matched_weights), 3) if matched_weights else 0.0,
         "calories_low": round(max(40.0, mid * 0.8), 1),
         "calories_mid": round(mid, 1),
         "calories_high": round(max(mid, mid * 1.25), 1),

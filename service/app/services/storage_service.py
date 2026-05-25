@@ -13,7 +13,7 @@ import pandas as pd
 from sklearn.feature_extraction.text import HashingVectorizer
 
 from ..config import get_settings
-from .enrichment_service import derive_allergens, derive_diet_flags, detect_ingredient_hints, estimate_calories
+from .enrichment_service import derive_allergens, derive_diet_flags, detect_ingredient_hints, estimate_calories_with_references
 from ..schemas import (
     CombinationRow,
     LineRolePrediction,
@@ -214,8 +214,12 @@ def _build_seed_item(row: dict[str, Any], fallback_local_id: str) -> ParsedItem 
 
     ingredients = sorted(set(item.ingredient_hints) | set(detect_ingredient_hints(item)))
     allergens = derive_allergens(item.explicit_allergens, ingredients)
-    diet_flags = derive_diet_flags(ingredients, allergens)
-    calories_low, calories_mid, calories_high, nutrition_confidence = estimate_calories(item, ingredients)
+    diet_flags = derive_diet_flags(ingredients, allergens, item=item)
+    calories_low, calories_mid, calories_high, nutrition_confidence, notes = estimate_calories_with_references(
+        item,
+        ingredients,
+        {ingredient: 1.0 for ingredient in ingredients},
+    )
 
     return item.model_copy(
         update={
@@ -226,7 +230,7 @@ def _build_seed_item(row: dict[str, Any], fallback_local_id: str) -> ParsedItem 
             "calories_mid": calories_mid,
             "calories_high": calories_high,
             "nutrition_confidence": round(nutrition_confidence, 3),
-            "enrichment_notes": ["seeded from reviewed gold menu annotations"],
+            "enrichment_notes": ["seeded from reviewed gold menu annotations", *notes],
         }
     )
 
