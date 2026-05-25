@@ -4,7 +4,6 @@ import base64
 import io
 import json
 import os
-import platform
 from pathlib import Path
 
 import pandas as pd
@@ -38,23 +37,15 @@ def resolve_api_url() -> str:
     return normalize_api_url(os.getenv("PICKMEAL_API_URL") or "http://127.0.0.1:8000")
 
 
-def paddle_docker_arm_is_experimental() -> bool:
-    if not running_in_docker():
-        return False
-    if os.getenv("PICKMEAL_ALLOW_PADDLE_DOCKER_ARM", "").strip().lower() in {"1", "true", "yes", "on"}:
-        return False
-    return platform.machine().lower() in {"arm64", "aarch64"}
-
-
 API_URL = resolve_api_url()
 DEFAULT_OCR_BACKEND = (os.getenv("PICKMEAL_OCR_BACKEND") or "easyocr").strip().lower()
 OCR_BACKEND_OPTIONS = ["rapidocr", "easyocr", "paddleocr_mobile", "paddleocr_quality", "auto"]
 OCR_BACKEND_LABELS = {
-    "rapidocr": "rapidocr — stable ONNX OCR for Docker CPU",
-    "easyocr": "easyocr — fastest local baseline",
-    "paddleocr_mobile": "paddleocr_mobile — better quality / lighter than server det",
-    "paddleocr_quality": "paddleocr_quality — heavier quality mode",
-    "auto": "auto — choose automatically",
+    "rapidocr": "RapidOCR",
+    "easyocr": "EasyOCR",
+    "paddleocr_mobile": "PaddleOCR Mobile",
+    "paddleocr_quality": "PaddleOCR Quality",
+    "auto": "Auto",
 }
 
 
@@ -251,6 +242,7 @@ def load_line_role_metric_rows() -> pd.DataFrame:
         ("Line-role baseline", "line_role_baseline"),
         ("Line-role expanded v1", "line_role_expanded_v1"),
         ("Line-role expanded SGD v1", "line_role_expanded_sgd_v1"),
+        ("Line-role contextual CatBoost v1", "line_role_contextual_catboost_v1"),
     ]
     for label, rel_dir in candidates:
         metrics = read_json_if_exists(PROJECT_ROOT / "reports" / rel_dir / "line_role_metrics.json") or {}
@@ -689,7 +681,6 @@ def metric_card(title: str, value: str, help_text: str | None = None):
 def render_summary_cards(payload: dict, items_df: pd.DataFrame, ocr_df: pd.DataFrame, line_roles_df: pd.DataFrame):
     parser_label = payload.get("parser_module", "unknown").split(".")[-1]
     ocr_backend = payload.get("ocr_backend", "unknown")
-    requested_ocr_backend = payload.get("requested_ocr_backend") or ocr_backend
     line_role_status = "loaded" if payload.get("line_role_model_loaded") else "not loaded"
     avg_conf = "—"
     if not ocr_df.empty and "ocr_confidence" in ocr_df.columns:
@@ -708,7 +699,7 @@ def render_summary_cards(payload: dict, items_df: pd.DataFrame, ocr_df: pd.DataF
             <div class='pm-summary-card'>
                 <div class='label'>OCR engine used</div>
                 <div class='value' style='font-size:1.2rem'>{ocr_backend}</div>
-                <div class='meta'>Requested: {requested_ocr_backend} · {len(ocr_df)} detected text rows</div>
+                <div class='meta'>{len(ocr_df)} detected text rows</div>
             </div>
             <div class='pm-summary-card'>
                 <div class='label'>OCR confidence</div>
@@ -733,13 +724,15 @@ def render_summary_cards(payload: dict, items_df: pd.DataFrame, ocr_df: pd.DataF
 
 def render_status_chips(payload: dict):
     parser_label = payload.get("parser_module", "unknown").split(".")[-1]
-    requested_ocr_backend = payload.get("requested_ocr_backend") or payload.get("ocr_backend", "unknown")
+    requested_ocr = payload.get("requested_ocr_backend")
+    actual_ocr = payload.get("ocr_backend", "unknown")
     chips = [
-        f"<span class='pm-chip'>Requested OCR: {requested_ocr_backend}</span>",
-        f"<span class='pm-chip'>Used OCR: {payload.get('ocr_backend', 'unknown')}</span>",
+        f"<span class='pm-chip'>OCR: {actual_ocr}</span>",
         f"<span class='pm-chip'>Parser: {parser_label}</span>",
         f"<span class='pm-chip'>Line-role: {'available' if payload.get('line_role_model_loaded') else 'missing'}</span>",
     ]
+    if requested_ocr and requested_ocr != actual_ocr:
+        chips.insert(1, f"<span class='pm-chip'>Requested OCR: {requested_ocr}</span>")
     st.markdown(f"<div class='pm-chip-row'>{''.join(chips)}</div>", unsafe_allow_html=True)
 
 
@@ -1116,6 +1109,37 @@ def render_dashboard(api_url: str):
         )
         show_dataframe(nutrition_df, height=120)
 
+    cache_stats = fetch_api_json(api_url, "/stats/cache")
+    if isinstance(cache_stats, dict):
+        st.markdown("### Redis cache layer")
+        c1, c2, c3, c4 = st.columns(4)
+        counters = cache_stats.get("local_counters") or {}
+        namespace_counts = cache_stats.get("namespace_key_counts") or {}
+        with c1:
+            metric_card("Cache enabled", "yes" if cache_stats.get("enabled") else "no", "Optional Redis-backed cache layer")
+        with c2:
+            metric_card("Cache ready", "yes" if cache_stats.get("available") else "no", "Redis ping and client availability")
+        with c3:
+            metric_card("Cache hits", str(counters.get("hit_count", 0)), "Hits recorded by this service process")
+        with c4:
+            metric_card("Cached keys", str(sum(int(v) for v in namespace_counts.values())), "Keys under the current namespace")
+
+        cache_df = pd.DataFrame(
+            [
+                {
+                    "configured": cache_stats.get("configured"),
+                    "namespace": cache_stats.get("namespace") or "",
+                    "recommendation_ttl_seconds": cache_stats.get("recommendation_ttl_seconds"),
+                    "llm_ttl_seconds": cache_stats.get("llm_ttl_seconds"),
+                    "local_counters": json.dumps(counters, ensure_ascii=False),
+                    "namespace_key_counts": json.dumps(namespace_counts, ensure_ascii=False),
+                    "server_info": json.dumps(cache_stats.get("server_info") or {}, ensure_ascii=False),
+                    "last_error": cache_stats.get("last_error") or "",
+                }
+            ]
+        )
+        show_dataframe(cache_df, height=120)
+
     runtime_stats = fetch_api_json(api_url, "/stats/runtime")
     if isinstance(runtime_stats, dict):
         st.markdown("### Runtime monitoring")
@@ -1290,7 +1314,7 @@ st.markdown(
     """
     <div class='pm-hero'>
         <h1>PickMeal AI</h1>
-        <p>Scan restaurant menus, inspect OCR quality, parse dishes into structure, and surface recommendations in a product-style demo instead of a raw technical dashboard.</p>
+        <p>Scan restaurant menus, inspect OCR quality, parse dishes into structure, and surface recommendations.</p>
         <div class='pm-hero-badges'>
             <span class='pm-badge'>OCR + parser pipeline</span>
             <span class='pm-badge'>Rotatable image input</span>
@@ -1327,11 +1351,7 @@ with home_tab:
             format_func=lambda option: OCR_BACKEND_LABELS.get(option, option),
             key="ocr_backend_select",
         )
-        if ocr_backend.startswith("paddleocr") and paddle_docker_arm_is_experimental():
-            st.info(
-                "PaddleOCR in Docker on Apple Silicon is currently experimental. "
-                "If it is not allowed in the runtime, the service will fall back to RapidOCR and show this in the result summary."
-            )
+        st.caption(f"Selected OCR engine: {OCR_BACKEND_LABELS.get(ocr_backend, ocr_backend)}")
         rotation_deg = st.selectbox("Rotate image", options=[0, 90, 180, 270], format_func=lambda x: f"{x}°", index=0, key="rotation_deg_select")
         st.caption("Use rotation before parsing so the menu is upright for OCR and the parser.")
 
@@ -1405,10 +1425,10 @@ with home_tab:
         line_roles_df = pd.DataFrame(payload.get("line_roles", []))
 
         st.success(f"Parsed {len(items_df)} items from {len(ocr_df)} OCR lines")
-        if payload.get("ocr_backend_warning"):
-            st.info(payload["ocr_backend_warning"])
         if payload.get("session_id"):
             st.caption(f"Stored session: {payload['session_id']}")
+        if payload.get("ocr_backend_warning"):
+            st.warning(payload["ocr_backend_warning"])
         render_status_chips(payload)
         render_summary_cards(payload, items_df, ocr_df, line_roles_df)
 
@@ -1502,7 +1522,12 @@ with home_tab:
                 preferred_sections = st.text_input("Preferred menu sections (comma-separated)", value="pasta", key="preferred_sections_input")
                 max_price = st.number_input("Max dish price", min_value=0.0, value=500.0, key="max_price_input")
                 max_calories = st.number_input("Max calories", min_value=0.0, value=700.0, key="max_calories_input")
-                engine = st.selectbox("Recommendation engine", ["auto", "tfidf", "sentence_transformer"], index=0, key="recommend_engine_select")
+                engine = st.selectbox(
+                    "Recommendation engine",
+                    ["auto", "tfidf", "sentence_transformer", "catboost_reranker"],
+                    index=0,
+                    key="recommend_engine_select",
+                )
             combo_col1, combo_col2 = st.columns(2)
             with combo_col1:
                 combo_budget = st.number_input("Combination budget", min_value=0.0, value=0.0, key="combo_budget_input")

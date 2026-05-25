@@ -3,6 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from itertools import combinations
 from functools import lru_cache
+import os
+import re
+from pathlib import Path
 from typing import Iterable
 
 import numpy as np
@@ -16,6 +19,24 @@ from ..schemas import CombinationRow, ParsedItem, RecommendRequest, Recommendati
 class EngineResult:
     engine_used: str
     scores: np.ndarray
+
+
+RERANK_FEATURE_NAMES = [
+    "semantic_score",
+    "tfidf_score",
+    "rule_score",
+    "token_jaccard",
+    "query_overlap",
+    "item_overlap",
+    "section_match",
+    "ingredient_overlap",
+    "has_description",
+    "price_present",
+    "name_overlap",
+]
+
+
+TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z'-]+")
 
 
 def _item_text(item: ParsedItem) -> str:
@@ -32,6 +53,20 @@ def _query_text(request: RecommendRequest) -> str:
     if request.preferred_sections:
         parts.append(" ".join(request.preferred_sections))
     return " ".join(parts).strip()
+
+
+def _normalize_text(text: str | None) -> str:
+    if text is None:
+        return ""
+    return " ".join(str(text).strip().split())
+
+
+def _tokenize(text: str | None) -> list[str]:
+    return [token.lower() for token in TOKEN_RE.findall(_normalize_text(text))]
+
+
+def _safe_section(text: str | None) -> str:
+    return _normalize_text(text).lower()
 
 
 def _try_sentence_transformer(texts: list[str], query_text: str) -> EngineResult | None:
@@ -89,12 +124,12 @@ def _semantic_scores(texts: list[str], query_text: str, engine: str) -> EngineRe
     if not query_text:
         return EngineResult(engine_used="none", scores=np.zeros(len(texts), dtype=float))
 
-    if engine in {"auto", "sentence_transformer"}:
+    if engine in {"auto", "sentence_transformer", "catboost_reranker"}:
         try:
             st_result = _try_sentence_transformer(texts, query_text)
         except RuntimeError:
             st_result = None
-            if engine == "sentence_transformer":
+            if engine in {"sentence_transformer", "catboost_reranker"}:
                 raise
         if st_result is not None:
             return st_result
@@ -189,6 +224,125 @@ def _match_label(score: float) -> str:
 
 def _enabled_flags(item: ParsedItem) -> list[str]:
     return [key for key, value in item.diet_flags.items() if value]
+
+
+def _project_root() -> Path:
+    return Path(__file__).resolve().parents[3]
+
+
+def _default_catboost_reranker_path() -> Path:
+    rel_path = os.getenv(
+        "PICKMEAL_RECOMMENDATION_RERANKER_PATH",
+        "reports/recommendation_catboost_reranker_v1/catboost_reranker.cbm",
+    )
+    return _project_root() / rel_path
+
+
+@lru_cache(maxsize=1)
+def _load_catboost_reranker():
+    path = _default_catboost_reranker_path()
+    if not path.exists():
+        raise RuntimeError(
+            f"CatBoost reranker model is missing at {path}. Train it first or switch the recommendation engine."
+        )
+    try:
+        from catboost import CatBoostClassifier
+    except Exception as exc:
+        raise RuntimeError(
+            "catboost is not installed in the current environment."
+        ) from exc
+    model = CatBoostClassifier()
+    model.load_model(str(path))
+    return model
+
+
+def _catboost_rerank_features(
+    request: RecommendRequest,
+    item: ParsedItem,
+    *,
+    semantic_score: float,
+    rule_score: float,
+    query_text: str,
+) -> list[float]:
+    query_tokens = set(_tokenize(query_text))
+    item_text = _item_text(item)
+    item_tokens = set(_tokenize(item_text))
+    overlap = len(query_tokens & item_tokens)
+    union = len(query_tokens | item_tokens) or 1
+    section_match = int(
+        bool(request.preferred_sections)
+        and _safe_section(item.section) in {_safe_section(section) for section in request.preferred_sections}
+    )
+    query_ingredient_tokens = set(_tokenize(" ".join(request.liked_terms)))
+    item_ingredient_tokens = set(_tokenize(" ".join(item.ingredient_hints)))
+    dish_name_tokens = set(_tokenize(item.dish_name))
+    tfidf_score = float(_tfidf_scores([item_text], query_text).scores[0]) if query_text else 0.0
+    return [
+        float(semantic_score),
+        tfidf_score,
+        float(rule_score),
+        overlap / union,
+        overlap / (len(query_tokens) or 1),
+        overlap / (len(item_tokens) or 1),
+        float(section_match),
+        float(len(query_ingredient_tokens & item_ingredient_tokens)),
+        float(int(bool(_normalize_text(item.description)))),
+        float(int(item.price_value is not None)),
+        float(len(dish_name_tokens & query_tokens)),
+    ]
+
+
+def _apply_catboost_rerank(
+    request: RecommendRequest,
+    rows: list[RecommendationRow],
+    items_by_id: dict[str, ParsedItem],
+    query_text: str,
+) -> tuple[str, list[RecommendationRow]]:
+    model = _load_catboost_reranker()
+    feature_rows: list[list[float]] = []
+    ordered_rows: list[RecommendationRow] = []
+    for row in rows:
+        item = items_by_id.get(row.local_id)
+        if item is None:
+            continue
+        feature_rows.append(
+            _catboost_rerank_features(
+                request,
+                item,
+                semantic_score=float(row.semantic_score),
+                rule_score=float(row.rule_score),
+                query_text=query_text,
+            )
+        )
+        ordered_rows.append(row)
+
+    if not feature_rows:
+        return "catboost_reranker", rows
+
+    feature_matrix = np.asarray(feature_rows, dtype=float)
+    raw_scores = np.asarray(model.predict(feature_matrix, prediction_type="RawFormulaVal"), dtype=float).reshape(-1)
+    if raw_scores.size == 0:
+        return "catboost_reranker", rows
+    if float(raw_scores.max()) == float(raw_scores.min()):
+        rerank_scores = np.full_like(raw_scores, 0.5, dtype=float)
+    else:
+        rerank_scores = (raw_scores - float(raw_scores.min())) / (float(raw_scores.max()) - float(raw_scores.min()))
+    reranked: list[RecommendationRow] = []
+    for row, score in zip(ordered_rows, rerank_scores):
+        blended_score = 0.65 * float(row.score) + 0.35 * float(score)
+        reranked.append(
+            row.model_copy(
+                update={
+                    "score": round(blended_score, 4),
+                    "match_label": _match_label(blended_score),
+                    "reasons": row.reasons + ["catboost reranker"],
+                }
+            )
+        )
+    reranked.sort(key=lambda rec: rec.score, reverse=True)
+    for rank, row in enumerate(reranked, start=1):
+        row.rank = rank
+    return "catboost_reranker", reranked
 
 
 def _combo_score(
@@ -329,6 +483,13 @@ def recommend_items(request: RecommendRequest) -> tuple[str, int, list[Recommend
     for rank, row in enumerate(rows, start=1):
         row.rank = rank
 
+    engine_used = engine_result.engine_used
+    if request.engine == "catboost_reranker" and query_text:
+        items_by_id = {item.local_id: item for item in candidates}
+        engine_used, reranked_rows = _apply_catboost_rerank(request, all_rows, items_by_id, query_text)
+        all_rows = reranked_rows
+        rows = all_rows[:top_k]
+
     combo_rows = build_combo_rows(request, candidates, all_rows)
 
-    return engine_result.engine_used, len(candidates), rows, combo_rows
+    return engine_used, len(candidates), rows, combo_rows

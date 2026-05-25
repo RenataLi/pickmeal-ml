@@ -6,6 +6,7 @@ from pathlib import Path
 import pandas as pd
 
 from ..config import get_settings
+from .redis_cache_service import load_cache_stats as _load_cache_stats
 from .llm_service import load_llm_stats as _load_llm_stats
 from .nutrition_reference_service import load_nutrition_reference_stats as _load_nutrition_reference_stats
 from .ocr_service import get_ocr_runtime_info
@@ -108,6 +109,10 @@ def load_rag_stats() -> dict:
 
 def load_nutrition_stats() -> dict:
     return _load_nutrition_reference_stats()
+
+
+def load_cache_stats() -> dict:
+    return _load_cache_stats()
 
 
 def load_runtime_stats() -> dict:

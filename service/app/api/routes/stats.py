@@ -3,8 +3,9 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from ...config import get_settings
-from ...schemas import DatasetStatsResponse, LLMStatsResponse, LineRoleStatsResponse, NutritionStatsResponse, OCRStatsResponse, ParserStatsResponse, RAGStatsResponse, RuntimeStatsResponse, StorageStatsResponse
+from ...schemas import CacheStatsResponse, DatasetStatsResponse, LLMStatsResponse, LineRoleStatsResponse, NutritionStatsResponse, OCRStatsResponse, ParserStatsResponse, RAGStatsResponse, RuntimeStatsResponse, StorageStatsResponse
 from ...services.stats_service import (
+    load_cache_stats,
     load_dataset_summary,
     load_llm_stats,
     load_line_role_metrics,
@@ -73,6 +74,12 @@ def rag_stats() -> RAGStatsResponse:
 def nutrition_stats() -> NutritionStatsResponse:
     payload = load_nutrition_stats()
     return NutritionStatsResponse(**payload)
+
+
+@router.get("/cache", response_model=CacheStatsResponse)
+def cache_stats() -> CacheStatsResponse:
+    payload = load_cache_stats()
+    return CacheStatsResponse(**payload)
 
 
 @router.get("/runtime", response_model=RuntimeStatsResponse)

@@ -17,6 +17,19 @@ services:
       retries: 10
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    container_name: pickmeal-redis
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
   api:
     build:
       context: .
@@ -34,6 +47,11 @@ services:
       PICKMEAL_PARSER_SERVICE_URL: http://parser:8002
       PICKMEAL_RECOMMENDATION_SERVICE_URL: http://recommendation:8003
       PICKMEAL_LLM_SERVICE_URL: http://llm:8004
+      PICKMEAL_REDIS_ENABLED: ${PICKMEAL_REDIS_ENABLED_DOCKER:-true}
+      PICKMEAL_REDIS_URL: ${PICKMEAL_REDIS_URL_DOCKER:-redis://redis:6379/0}
+      PICKMEAL_REDIS_CACHE_NAMESPACE: ${PICKMEAL_REDIS_CACHE_NAMESPACE:-pickmeal}
+      PICKMEAL_RECOMMENDATION_CACHE_TTL_SECONDS: ${PICKMEAL_RECOMMENDATION_CACHE_TTL_SECONDS:-1800}
+      PICKMEAL_LLM_CACHE_TTL_SECONDS: ${PICKMEAL_LLM_CACHE_TTL_SECONDS:-21600}
       PICKMEAL_DATASET_SUMMARY_PATH: ${PICKMEAL_DATASET_SUMMARY_PATH:-data/interim/dataset_summary.json}
       PICKMEAL_DATABASE_URL: ${PICKMEAL_DATABASE_URL_DOCKER:-postgresql://pickmeal:pickmeal@postgres:5432/pickmeal}
       PICKMEAL_EMBEDDING_DIMENSIONS: ${PICKMEAL_EMBEDDING_DIMENSIONS:-256}
@@ -51,6 +69,8 @@ services:
       - pickmeal_cache:/app/.cache
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       ocr:
         condition: service_healthy
@@ -116,7 +136,14 @@ services:
     environment:
       PICKMEAL_EMBEDDING_DIMENSIONS: ${PICKMEAL_EMBEDDING_DIMENSIONS:-256}
       PICKMEAL_EMBEDDING_MODEL: ${PICKMEAL_EMBEDDING_MODEL:-hashing_v1}
+      PICKMEAL_REDIS_ENABLED: ${PICKMEAL_REDIS_ENABLED_DOCKER:-true}
+      PICKMEAL_REDIS_URL: ${PICKMEAL_REDIS_URL_DOCKER:-redis://redis:6379/0}
+      PICKMEAL_REDIS_CACHE_NAMESPACE: ${PICKMEAL_REDIS_CACHE_NAMESPACE:-pickmeal}
+      PICKMEAL_RECOMMENDATION_CACHE_TTL_SECONDS: ${PICKMEAL_RECOMMENDATION_CACHE_TTL_SECONDS:-1800}
     command: ["uvicorn", "service.app.recommendation_app:app", "--host", "0.0.0.0", "--port", "8003"]
+    depends_on:
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8003/health', timeout=5)\""]
       interval: 30s
@@ -142,9 +169,15 @@ services:
       PICKMEAL_LLM_MODEL: ${PICKMEAL_LLM_MODEL:-}
       PICKMEAL_LLM_TIMEOUT_SECONDS: ${PICKMEAL_LLM_TIMEOUT_SECONDS:-45}
       PICKMEAL_LLM_MAX_ITEMS_PER_REQUEST: ${PICKMEAL_LLM_MAX_ITEMS_PER_REQUEST:-6}
+      PICKMEAL_REDIS_ENABLED: ${PICKMEAL_REDIS_ENABLED_DOCKER:-true}
+      PICKMEAL_REDIS_URL: ${PICKMEAL_REDIS_URL_DOCKER:-redis://redis:6379/0}
+      PICKMEAL_REDIS_CACHE_NAMESPACE: ${PICKMEAL_REDIS_CACHE_NAMESPACE:-pickmeal}
+      PICKMEAL_LLM_CACHE_TTL_SECONDS: ${PICKMEAL_LLM_CACHE_TTL_SECONDS:-21600}
     command: ["uvicorn", "service.app.llm_app:app", "--host", "0.0.0.0", "--port", "8004"]
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8004/health', timeout=5)\""]
@@ -163,6 +196,7 @@ services:
       - "8501:8501"
     environment:
       PICKMEAL_API_URL: ${PICKMEAL_API_URL_DOCKER:-http://api:8000}
+      PICKMEAL_OCR_BACKEND: ${PICKMEAL_OCR_BACKEND_DOCKER:-auto}
       STREAMLIT_SERVER_HEADLESS: "true"
       STREAMLIT_BROWSER_GATHER_USAGE_STATS: "false"
     depends_on:

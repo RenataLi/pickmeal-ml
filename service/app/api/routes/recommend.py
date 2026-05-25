@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 
 from ...schemas import CombinationRow, RecommendationRow, RecommendRequest, RecommendResponse
+from ...services.redis_cache_service import get_cached_payload, set_cached_payload
 from ...services.runtime_monitoring_service import measure_stage
 from ...services.recommendation_service import recommend_items
 from ...services.service_client import post_json, service_urls
@@ -87,7 +88,39 @@ def recommend(payload: RecommendRequest) -> RecommendResponse:
         from ...config import get_settings
 
         settings = get_settings()
-        response = _recommend_via_service(payload)
+        cache_lookup_timer = measure_stage(
+            settings.api_title,
+            "gateway",
+            "recommend_cache_lookup",
+            details={"n_items": len(payload.items), "engine_requested": payload.engine},
+        )
+        cached = get_cached_payload("recommendation", payload.model_dump(mode="json"))
+        if isinstance(cached, dict):
+            cache_lookup_timer.finish(
+                ok=True,
+                extra_details={
+                    "cache_hit": True,
+                    "engine_used": str(cached.get("engine_used", "unknown")),
+                    "n_candidates": int(cached.get("n_candidates", 0)),
+                },
+            )
+            response = RecommendResponse(**cached)
+        else:
+            cache_lookup_timer.finish(ok=True, extra_details={"cache_hit": False})
+            response = _recommend_via_service(payload)
+            cache_store_timer = measure_stage(
+                settings.api_title,
+                "gateway",
+                "recommend_cache_store",
+                details={"n_items": len(payload.items), "engine_requested": payload.engine},
+            )
+            stored = set_cached_payload(
+                "recommendation",
+                payload.model_dump(mode="json"),
+                response.model_dump(mode="json"),
+                settings.recommendation_cache_ttl_seconds,
+            )
+            cache_store_timer.finish(ok=True, extra_details={"stored": stored})
         persist_timer = measure_stage(
             settings.api_title,
             "gateway",

@@ -13,6 +13,7 @@ from .api.routes.stats import router as stats_router
 from .config import get_settings
 from .services.nutrition_reference_service import initialize_nutrition_reference
 from .services.rag_service import initialize_rag
+from .services.redis_cache_service import initialize_cache
 from .services.runtime_monitoring_service import attach_runtime_monitoring
 from .services.storage_service import initialize_storage
 
@@ -41,4 +42,5 @@ app.include_router(llm_router)
 def startup() -> None:
     initialize_storage()
     initialize_nutrition_reference()
+    initialize_cache()
     initialize_rag()

@@ -47,6 +47,11 @@ class Settings(BaseModel):
     rag_enabled: bool = os.getenv("PICKMEAL_RAG_ENABLED", "true").strip().lower() in {"1", "true", "yes", "on"}
     rag_top_k: int = int(os.getenv("PICKMEAL_RAG_TOP_K", "4"))
     rag_dataset_path: str = os.getenv("PICKMEAL_RAG_DATASET_PATH", "data/processed/gold/menu_gold_all_batches.csv")
+    redis_enabled: bool = os.getenv("PICKMEAL_REDIS_ENABLED", "false").strip().lower() in {"1", "true", "yes", "on"}
+    redis_url: str | None = os.getenv("PICKMEAL_REDIS_URL") or None
+    redis_cache_namespace: str = os.getenv("PICKMEAL_REDIS_CACHE_NAMESPACE", "pickmeal")
+    recommendation_cache_ttl_seconds: int = int(os.getenv("PICKMEAL_RECOMMENDATION_CACHE_TTL_SECONDS", "1800"))
+    llm_cache_ttl_seconds: int = int(os.getenv("PICKMEAL_LLM_CACHE_TTL_SECONDS", "21600"))
     nutrition_reference_enabled: bool = os.getenv("PICKMEAL_NUTRITION_REFERENCE_ENABLED", "true").strip().lower() in {"1", "true", "yes", "on"}
     nutrition_reference_seed_path: str = os.getenv(
         "PICKMEAL_NUTRITION_REFERENCE_SEED_PATH",
