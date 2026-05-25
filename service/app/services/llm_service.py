@@ -14,6 +14,8 @@ from .rag_service import retrieve_rag_for_items
 _LLM_STATE: dict[str, str | None] = {
     "last_error": None,
 }
+LLM_ENRICHMENT_PROMPT_VERSION = "grounded_dish_card_v1"
+LLM_REQUEST_TEMPERATURE = 0.2
 
 
 def llm_is_configured() -> bool:
@@ -32,6 +34,22 @@ def load_llm_stats() -> dict[str, Any]:
         "timeout_seconds": settings.llm_timeout_seconds,
         "max_items_per_request": settings.llm_max_items_per_request,
         "last_error": _LLM_STATE["last_error"],
+    }
+
+
+def llm_cache_context() -> dict[str, Any]:
+    settings = get_settings()
+    return {
+        "cache_schema_version": "llm_enrichment_v2",
+        "prompt_version": LLM_ENRICHMENT_PROMPT_VERSION,
+        "temperature": LLM_REQUEST_TEMPERATURE,
+        "llm_enabled": bool(settings.llm_enabled),
+        "llm_model": settings.llm_model,
+        "llm_base_url": settings.llm_base_url,
+        "rag_enabled": bool(settings.rag_enabled),
+        "rag_dataset_path": settings.rag_dataset_path,
+        "rag_top_k": settings.rag_top_k,
+        "llm_max_items_per_request": settings.llm_max_items_per_request,
     }
 
 
@@ -111,7 +129,7 @@ def _request_chat_completion(messages: list[dict[str, str]]) -> str:
     }
     payload = {
         "model": settings.llm_model,
-        "temperature": 0.2,
+        "temperature": LLM_REQUEST_TEMPERATURE,
         "messages": messages,
     }
     response = requests.post(endpoint, headers=headers, json=payload, timeout=settings.llm_timeout_seconds)

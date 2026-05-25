@@ -34,6 +34,7 @@ RERANK_FEATURE_NAMES = [
     "price_present",
     "name_overlap",
 ]
+RECOMMENDATION_CACHE_SCHEMA_VERSION = "recommendation_runtime_v2"
 
 
 TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z'-]+")
@@ -67,6 +68,20 @@ def _tokenize(text: str | None) -> list[str]:
 
 def _safe_section(text: str | None) -> str:
     return _normalize_text(text).lower()
+
+
+def _calorie_limit_status(request: RecommendRequest, item: ParsedItem) -> str:
+    if request.max_calories is None or item.calories_mid is None:
+        return "unknown"
+    if float(item.calories_mid) <= float(request.max_calories):
+        return "within"
+
+    confidence = float(item.nutrition_confidence or 0.0)
+    if confidence >= 0.75:
+        return "exceeds"
+    if item.calories_low is not None and float(item.calories_low) > float(request.max_calories):
+        return "exceeds"
+    return "uncertain"
 
 
 def _try_sentence_transformer(texts: list[str], query_text: str) -> EngineResult | None:
@@ -157,7 +172,7 @@ def _apply_filters(request: RecommendRequest, items: Iterable[ParsedItem]) -> li
             continue
         if request.max_price is not None and item.price_value is not None and item.price_value > request.max_price:
             continue
-        if request.max_calories is not None and item.calories_mid is not None and item.calories_mid > request.max_calories:
+        if _calorie_limit_status(request, item) == "exceeds":
             continue
         if required_diet_flags:
             item_flags = {k.lower() for k, v in item.diet_flags.items() if v}
@@ -190,9 +205,13 @@ def _rule_score(request: RecommendRequest, item: ParsedItem) -> tuple[float, lis
             reasons.append("within budget")
 
     if request.max_calories is not None and item.calories_mid is not None:
-        if item.calories_mid <= request.max_calories:
+        calorie_status = _calorie_limit_status(request, item)
+        if calorie_status == "within":
             score += 0.14
             reasons.append("within calorie target")
+        elif calorie_status == "uncertain":
+            score += 0.05
+            reasons.append("possible calorie fit")
 
     if item.nutrition_confidence is not None:
         score += 0.10 * float(item.nutrition_confidence)
@@ -236,6 +255,14 @@ def _default_catboost_reranker_path() -> Path:
         "reports/recommendation_catboost_reranker_v1/catboost_reranker.cbm",
     )
     return _project_root() / rel_path
+
+
+def recommendation_cache_context() -> dict[str, str]:
+    return {
+        "cache_schema_version": RECOMMENDATION_CACHE_SCHEMA_VERSION,
+        "semantic_backend_chain": "sentence_transformers/all-MiniLM-L6-v2|fastembed/BAAI-bge-small-en-v1.5|tfidf",
+        "catboost_reranker_path": str(_default_catboost_reranker_path()),
+    }
 
 
 @lru_cache(maxsize=1)

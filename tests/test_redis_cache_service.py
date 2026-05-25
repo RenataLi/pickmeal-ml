@@ -11,6 +11,8 @@ class FakeRedis:
     def __init__(self) -> None:
         self.store: dict[str, str] = {}
         self.ttls: dict[str, int] = {}
+        self.expires_at: dict[str, int] = {}
+        self.now = 0
         self.fail_get = False
 
     def ping(self) -> bool:
@@ -19,17 +21,25 @@ class FakeRedis:
     def get(self, key: str) -> str | None:
         if self.fail_get:
             raise RuntimeError("redis get failed")
+        self._expire_if_needed(key)
         return self.store.get(key)
 
     def setex(self, key: str, ttl_seconds: int, value: str) -> None:
         self.store[key] = value
         self.ttls[key] = ttl_seconds
+        self.expires_at[key] = self.now + ttl_seconds
 
     def scan_iter(self, match: str | None = None):
         prefix = (match or "").rstrip("*")
         for key in sorted(self.store):
+            self._expire_if_needed(key)
             if not prefix or key.startswith(prefix):
                 yield key
+
+    def advance(self, seconds: int) -> None:
+        self.now += seconds
+        for key in list(self.store):
+            self._expire_if_needed(key)
 
     def info(self) -> dict[str, object]:
         return {
@@ -39,6 +49,13 @@ class FakeRedis:
             "used_memory_human": "1.00M",
             "uptime_in_seconds": 42,
         }
+
+    def _expire_if_needed(self, key: str) -> None:
+        expires_at = self.expires_at.get(key)
+        if expires_at is not None and self.now >= expires_at:
+            self.store.pop(key, None)
+            self.ttls.pop(key, None)
+            self.expires_at.pop(key, None)
 
 
 def reset_cache_state() -> None:
@@ -110,3 +127,40 @@ class RedisCacheServiceTests(TestCase):
         self.assertEqual(stats["hit_count"], 0)
         self.assertGreaterEqual(stats["error_count"], 1)
         self.assertIn("redis get failed", str(stats["last_error"]))
+
+    def test_key_context_changes_cache_key(self) -> None:
+        payload = {"dish": "salad", "user_context": "vegetarian"}
+        context_a = {"prompt_version": "v1", "llm_model": "model-a"}
+        context_b = {"prompt_version": "v2", "llm_model": "model-a"}
+
+        with patch.object(cache_service, "get_settings", return_value=self.settings):
+            key_a = cache_service._cache_key("llm_enrichment", payload, key_context=context_a)
+            key_b = cache_service._cache_key("llm_enrichment", payload, key_context=context_b)
+
+        self.assertNotEqual(key_a, key_b)
+
+    def test_changed_payload_changes_cache_key(self) -> None:
+        payload_a = {"dish": "salad", "user_context": "vegetarian"}
+        payload_b = {"dish": "salad", "user_context": "gluten free"}
+
+        with patch.object(cache_service, "get_settings", return_value=self.settings):
+            key_a = cache_service._cache_key("llm_enrichment", payload_a)
+            key_b = cache_service._cache_key("llm_enrichment", payload_b)
+
+        self.assertNotEqual(key_a, key_b)
+
+    def test_expired_key_becomes_miss_again(self) -> None:
+        payload = {"dish": "soup"}
+        response_payload = {"items": [{"dish_name": "Soup"}]}
+
+        with patch.object(cache_service, "get_settings", return_value=self.settings), patch.object(
+            cache_service, "_load_redis_client", return_value=self.fake_redis
+        ):
+            stored = cache_service.set_cached_payload("llm_enrichment", payload, response_payload, 5)
+            self.assertTrue(stored)
+            self.assertEqual(cache_service.get_cached_payload("llm_enrichment", payload), response_payload)
+
+            self.fake_redis.advance(6)
+            cached_after_expiry = cache_service.get_cached_payload("llm_enrichment", payload)
+
+        self.assertIsNone(cached_after_expiry)

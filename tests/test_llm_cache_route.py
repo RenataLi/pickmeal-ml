@@ -61,12 +61,19 @@ def make_response() -> LLMItemEnrichmentResponse:
 class LLMCacheRouteTests(TestCase):
     def setUp(self) -> None:
         self.settings = SimpleNamespace(api_title="PickMeal API", llm_cache_ttl_seconds=321)
+        self.cache_context = {
+            "cache_schema_version": "llm_enrichment_v2",
+            "prompt_version": "grounded_dish_card_v1",
+            "llm_model": "stub-model",
+        }
 
     def test_cache_miss_calls_service_and_stores_response(self) -> None:
         payload = make_payload()
         response = make_response()
 
         with patch.object(llm_routes, "get_settings", return_value=self.settings), patch.object(
+            llm_routes, "llm_cache_context", return_value=self.cache_context
+        ), patch.object(
             llm_routes, "measure_stage", side_effect=lambda *args, **kwargs: DummyTimer()
         ), patch.object(llm_routes, "get_cached_payload", return_value=None), patch.object(
             llm_routes, "set_cached_payload", return_value=True
@@ -82,6 +89,7 @@ class LLMCacheRouteTests(TestCase):
             payload.model_dump(mode="json"),
             response.model_dump(mode="json"),
             321,
+            key_context=self.cache_context,
         )
 
     def test_cache_hit_skips_service_call(self) -> None:
@@ -89,6 +97,8 @@ class LLMCacheRouteTests(TestCase):
         cached_response = make_response().model_dump(mode="json")
 
         with patch.object(llm_routes, "get_settings", return_value=self.settings), patch.object(
+            llm_routes, "llm_cache_context", return_value=self.cache_context
+        ), patch.object(
             llm_routes, "measure_stage", side_effect=lambda *args, **kwargs: DummyTimer()
         ), patch.object(
             llm_routes, "get_cached_payload", return_value=cached_response
@@ -103,3 +113,40 @@ class LLMCacheRouteTests(TestCase):
         self.assertEqual(result.model, "stub-model")
         enrich_via_service.assert_not_called()
         set_cached.assert_not_called()
+
+    def test_cache_context_is_used_for_lookup(self) -> None:
+        payload = make_payload()
+
+        with patch.object(llm_routes, "get_settings", return_value=self.settings), patch.object(
+            llm_routes, "llm_cache_context", return_value=self.cache_context
+        ), patch.object(
+            llm_routes, "measure_stage", side_effect=lambda *args, **kwargs: DummyTimer()
+        ), patch.object(
+            llm_routes, "get_cached_payload", return_value=make_response().model_dump(mode="json")
+        ) as get_cached, patch.object(
+            llm_routes, "set_cached_payload", return_value=True
+        ):
+            llm_routes.enrich_items(payload)
+
+        get_cached.assert_called_once_with(
+            "llm_enrichment",
+            payload.model_dump(mode="json"),
+            key_context=self.cache_context,
+        )
+
+    def test_cache_store_failure_does_not_break_response(self) -> None:
+        payload = make_payload()
+        response = make_response()
+
+        with patch.object(llm_routes, "get_settings", return_value=self.settings), patch.object(
+            llm_routes, "llm_cache_context", return_value=self.cache_context
+        ), patch.object(
+            llm_routes, "measure_stage", side_effect=lambda *args, **kwargs: DummyTimer()
+        ), patch.object(llm_routes, "get_cached_payload", return_value=None), patch.object(
+            llm_routes, "set_cached_payload", return_value=False
+        ), patch.object(
+            llm_routes, "_enrich_via_service", return_value=response
+        ):
+            result = llm_routes.enrich_items(payload)
+
+        self.assertEqual(result.model_dump(mode="json"), response.model_dump(mode="json"))
