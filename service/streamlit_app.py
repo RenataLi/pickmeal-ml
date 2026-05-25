@@ -724,11 +724,15 @@ def render_summary_cards(payload: dict, items_df: pd.DataFrame, ocr_df: pd.DataF
 
 def render_status_chips(payload: dict):
     parser_label = payload.get("parser_module", "unknown").split(".")[-1]
+    requested_ocr = payload.get("requested_ocr_backend")
+    actual_ocr = payload.get("ocr_backend", "unknown")
     chips = [
-        f"<span class='pm-chip'>OCR: {payload.get('ocr_backend', 'unknown')}</span>",
+        f"<span class='pm-chip'>OCR: {actual_ocr}</span>",
         f"<span class='pm-chip'>Parser: {parser_label}</span>",
         f"<span class='pm-chip'>Line-role: {'available' if payload.get('line_role_model_loaded') else 'missing'}</span>",
     ]
+    if requested_ocr and requested_ocr != actual_ocr:
+        chips.insert(1, f"<span class='pm-chip'>Requested OCR: {requested_ocr}</span>")
     st.markdown(f"<div class='pm-chip-row'>{''.join(chips)}</div>", unsafe_allow_html=True)
 
 
@@ -1423,6 +1427,8 @@ with home_tab:
         st.success(f"Parsed {len(items_df)} items from {len(ocr_df)} OCR lines")
         if payload.get("session_id"):
             st.caption(f"Stored session: {payload['session_id']}")
+        if payload.get("ocr_backend_warning"):
+            st.warning(payload["ocr_backend_warning"])
         render_status_chips(payload)
         render_summary_cards(payload, items_df, ocr_df, line_roles_df)
 
