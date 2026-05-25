@@ -14,7 +14,7 @@ PickMeal is a menu-understanding and dish recommendation service. It turns resta
 
 The repository contains the ML pipeline, service runtime, storage and retrieval layer, Redis cache path, and a Streamlit demo for local inspection.
 
-## What PickMeal Does
+## Pickmeal features
 
 PickMeal is designed for menus where important information is incomplete. A menu often gives a dish name, section, short description, and price, but not a full ingredient list, verified calories, or reliable allergen labels. The service keeps this uncertainty explicit by storing ranges, confidence values, evidence rows, and caution notes instead of overconfident single-value claims.
 
@@ -172,11 +172,21 @@ curl http://localhost:8000/stats/ocr
 | `POST /parse/image` | Run OCR, parsing, enrichment, and persistence for an uploaded menu image. |
 | `POST /recommend` | Rank parsed dishes under user constraints. |
 | `POST /storage/similar` | Retrieve similar stored dishes. |
+| `GET /storage/snapshot` | Export the current storage snapshot for inspection or transfer. |
+| `POST /storage/snapshot/import` | Import a storage snapshot and report imported object counts. |
+| `GET /nutrition/reference/stats` | Inspect nutrition reference state and dictionary coverage. |
+| `POST /nutrition/reference/refresh` | Refresh nutrition reference data and record the operation in runtime diagnostics. |
 | `POST /llm/enrich-items` | Generate optional grounded dish-card fields. |
-| `GET /stats/cache` | Inspect Redis state, counters, TTLs, and namespace counts. |
+| `GET /stats/dataset` | Inspect dataset summary used by diagnostics and validation. |
+| `GET /stats/parser` | Inspect parser metrics and active parser configuration. |
+| `GET /stats/line-role` | Inspect line-role classifier metrics and reports. |
+| `GET /stats/ocr` | Inspect OCR backend availability and benchmark context. |
 | `GET /stats/storage` | Inspect storage initialization and persisted object counts. |
+| `GET /stats/llm` | Inspect LLM configuration and enrichment status. |
+| `GET /stats/rag` | Inspect RAG availability, evidence document counts, and source types. |
 | `GET /stats/nutrition` | Inspect nutrition reference loading and source counts. |
 | `GET /stats/runtime` | Inspect route and stage timings. |
+| `GET /stats/cache` | Inspect Redis state, counters, TTLs, and namespace counts. |
 
 ## Redis Cache
 
@@ -224,7 +234,3 @@ Selected local reports are stored under [reports](reports):
 - Streamlit and pre-defense assets
 
 Dataset preparation and gold data utilities live under [src/pickmeal_ml/data](src/pickmeal_ml/data).
-
-## Notes
-
-PickMeal is a local research and demo service, not a medical or nutritional authority. Calorie, diet, and allergen outputs are decision-support signals derived from menu evidence, heuristics, and reference matches. The system intentionally keeps confidence and caution fields visible so users can inspect uncertainty instead of receiving unsupported exact claims.
