@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException
 from ...config import get_settings
 from ...schemas import LLMItemEnrichmentRequest, LLMItemEnrichmentResponse, ParsedItem, RAGEvidenceRow
 from ...services.llm_service import enrich_items_with_llm
+from ...services.redis_cache_service import get_cached_payload, set_cached_payload
 from ...services.runtime_monitoring_service import measure_stage
 from ...services.service_client import post_json, service_urls
 
@@ -71,9 +72,42 @@ def _enrich_via_service(payload: LLMItemEnrichmentRequest) -> LLMItemEnrichmentR
 
 @router.post("/enrich-items", response_model=LLMItemEnrichmentResponse)
 def enrich_items(payload: LLMItemEnrichmentRequest) -> LLMItemEnrichmentResponse:
+    settings = get_settings()
     try:
-        return _enrich_via_service(payload)
+        cache_lookup_timer = measure_stage(
+            settings.api_title,
+            "gateway",
+            "llm_cache_lookup",
+            details={"n_items": len(payload.items), "top_k": payload.top_k},
+        )
+        cached = get_cached_payload("llm_enrichment", payload.model_dump(mode="json"))
+        if isinstance(cached, dict):
+            cache_lookup_timer.finish(
+                ok=True,
+                extra_details={
+                    "cache_hit": True,
+                    "provider_label": str(cached.get("provider_label", "unknown")),
+                    "model": str(cached.get("model", "unknown")),
+                },
+            )
+            return LLMItemEnrichmentResponse(**cached)
+        cache_lookup_timer.finish(ok=True, extra_details={"cache_hit": False})
+
+        response = _enrich_via_service(payload)
+        cache_store_timer = measure_stage(
+            settings.api_title,
+            "gateway",
+            "llm_cache_store",
+            details={"n_items": len(payload.items), "top_k": payload.top_k},
+        )
+        stored = set_cached_payload(
+            "llm_enrichment",
+            payload.model_dump(mode="json"),
+            response.model_dump(mode="json"),
+            settings.llm_cache_ttl_seconds,
+        )
+        cache_store_timer.finish(ok=True, extra_details={"stored": stored})
+        return response
     except Exception as exc:
-        settings = get_settings()
         measure_stage(settings.api_title, "gateway", "llm_enrich", details={"n_items": len(payload.items), "top_k": payload.top_k}).finish(ok=False, error=str(exc))
         raise HTTPException(status_code=400, detail=str(exc)) from exc

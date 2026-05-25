@@ -177,6 +177,25 @@ class NutritionRefreshResponse(BaseModel):
     skipped: bool = False
 
 
+class CacheStatsResponse(BaseModel):
+    enabled: bool
+    configured: bool
+    available: bool
+    redis_url_present: bool
+    namespace: str
+    recommendation_ttl_seconds: int
+    llm_ttl_seconds: int
+    get_count: int = 0
+    hit_count: int = 0
+    miss_count: int = 0
+    set_count: int = 0
+    error_count: int = 0
+    local_counters: dict[str, int] = Field(default_factory=dict)
+    namespace_key_counts: dict[str, int] = Field(default_factory=dict)
+    server_info: dict[str, Any] = Field(default_factory=dict)
+    last_error: str | None = None
+
+
 class RuntimeStatsResponse(BaseModel):
     service_id: str
     started_at: str
@@ -205,7 +224,7 @@ class RecommendRequest(BaseModel):
     combo_min_items: int = 2
     combo_max_items: int = 3
     top_k: int = 5
-    engine: Literal["auto", "tfidf", "sentence_transformer"] = "auto"
+    engine: Literal["auto", "tfidf", "sentence_transformer", "catboost_reranker"] = "auto"
 
 
 class RecommendationRow(BaseModel):
